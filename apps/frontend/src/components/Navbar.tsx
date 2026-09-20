@@ -2,11 +2,15 @@ import React from 'react';
 import { Plus, LogOut, User, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+import { AppTab } from './Sidebar';
+
 interface NavbarProps {
-  activeTab: 'checklist' | 'calendar' | 'analytics';
-  setActiveTab: (tab: 'checklist' | 'calendar' | 'analytics') => void;
+  activeTab: AppTab;
+  setActiveTab: (tab: AppTab) => void;
   onOpenCreateTask: () => void;
   onOpenCreateEvent: () => void;
+  onOpenCreateHabit?: () => void;
+  onOpenCreateTransaction?: () => void;
   onOpenAuthModal?: () => void;
 }
 
@@ -15,6 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   onOpenCreateTask,
   onOpenCreateEvent,
+  onOpenCreateHabit,
+  onOpenCreateTransaction,
   onOpenAuthModal
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -66,6 +72,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {isAuthenticated && activeTab === 'calendar' && (
           <button className="btn btn-primary" onClick={onOpenCreateEvent}>
             <Plus size={16} /> Đặt Lịch Mới
+          </button>
+        )}
+
+        {isAuthenticated && activeTab === 'habits' && (
+          <button className="btn btn-primary" onClick={onOpenCreateHabit}>
+            <Plus size={16} /> Thêm Thói Quen
+          </button>
+        )}
+
+        {isAuthenticated && activeTab === 'finances' && (
+          <button className="btn btn-primary" onClick={onOpenCreateTransaction}>
+            <Plus size={16} /> Thêm Thu / Chi
           </button>
         )}
 

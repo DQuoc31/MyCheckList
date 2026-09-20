@@ -10,7 +10,16 @@ import {
   IUser,
   LoginDto,
   RegisterDto,
-  AuthResponse
+  AuthResponse,
+  IHabitTracker,
+  CreateHabitDto,
+  UpdateHabitDto,
+  LogHabitEntryDto,
+  ITransaction,
+  CreateTransactionDto,
+  UpdateTransactionDto,
+  FinanceSummary,
+  ComprehensiveAnalytics
 } from '@mychecklist/shared';
 
 const API_BASE = '/api';
@@ -89,6 +98,39 @@ export const ScheduleAPI = {
   delete: (id: string) => fetchJSON<{ message: string }>(`/schedule/${id}`, { method: 'DELETE' })
 };
 
+export const HabitAPI = {
+  getAll: () => fetchJSON<IHabitTracker[]>('/habits'),
+  create: (dto: CreateHabitDto) => fetchJSON<IHabitTracker>('/habits', { method: 'POST', body: JSON.stringify(dto) }),
+  update: (id: string, dto: UpdateHabitDto) => fetchJSON<IHabitTracker>(`/habits/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
+  logEntry: (id: string, dto: LogHabitEntryDto) => fetchJSON<IHabitTracker>(`/habits/${id}/log`, { method: 'POST', body: JSON.stringify(dto) }),
+  resetEntry: (id: string, date?: string) => fetchJSON<IHabitTracker>(`/habits/${id}/reset${date ? `?date=${date}` : ''}`, { method: 'DELETE' }),
+  delete: (id: string) => fetchJSON<{ message: string }>(`/habits/${id}`, { method: 'DELETE' })
+};
+
+export const TransactionAPI = {
+  getAll: (params?: { date?: string; timeSlot?: string; type?: string; startDate?: string; endDate?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.date) query.append('date', params.date);
+    if (params?.timeSlot) query.append('timeSlot', params.timeSlot);
+    if (params?.type) query.append('type', params.type);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString();
+    return fetchJSON<ITransaction[]>(`/transactions${qs ? `?${qs}` : ''}`);
+  },
+  getSummary: (params?: { date?: string; startDate?: string; endDate?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.date) query.append('date', params.date);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    const qs = query.toString();
+    return fetchJSON<FinanceSummary>(`/transactions/summary${qs ? `?${qs}` : ''}`);
+  },
+  create: (dto: CreateTransactionDto) => fetchJSON<ITransaction>('/transactions', { method: 'POST', body: JSON.stringify(dto) }),
+  update: (id: string, dto: UpdateTransactionDto) => fetchJSON<ITransaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
+  delete: (id: string) => fetchJSON<{ message: string }>(`/transactions/${id}`, { method: 'DELETE' })
+};
+
 export const AnalyticsAPI = {
-  getSummary: () => fetchJSON<AnalyticsSummary>('/analytics')
+  getSummary: () => fetchJSON<ComprehensiveAnalytics & AnalyticsSummary>('/analytics')
 };

@@ -1,37 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { ITask, IScheduleEvent, AnalyticsSummary } from '@mychecklist/shared';
+import { 
+  ITask, 
+  IScheduleEvent, 
+  IHabitTracker, 
+  ITransaction,
+  ComprehensiveAnalytics,
+  AnalyticsSummary,
+  AnalyticsCategory
+} from '@mychecklist/shared';
 import { Navbar } from './components/Navbar';
-import { Sidebar } from './components/Sidebar';
+import { Sidebar, AppTab } from './components/Sidebar';
 import { ChecklistView } from './components/ChecklistView';
 import { CalendarView } from './components/CalendarView';
+import { HabitsView } from './components/HabitsView';
+import { FinancesView } from './components/FinancesView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { AuthPage } from './components/AuthPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { TaskAPI, ScheduleAPI, AnalyticsAPI } from './services/api';
+import { TaskAPI, ScheduleAPI, HabitAPI, TransactionAPI, AnalyticsAPI } from './services/api';
 
 const MainApp: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'checklist' | 'calendar' | 'analytics'>('checklist');
+  const [activeTab, setActiveTab] = useState<AppTab>('checklist');
+  const [analyticsCategory, setAnalyticsCategory] = useState<AnalyticsCategory>('TASKS');
   const [tasks, setTasks] = useState<ITask[]>([]);
   const [events, setEvents] = useState<IScheduleEvent[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+  const [habits, setHabits] = useState<IHabitTracker[]>([]);
+  const [transactions, setTransactions] = useState<ITransaction[]>([]);
+  const [analytics, setAnalytics] = useState<(ComprehensiveAnalytics & AnalyticsSummary) | null>(null);
   const [loading, setLoading] = useState(false);
 
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showCreateHabitModal, setShowCreateHabitModal] = useState(false);
+  const [showCreateTransactionModal, setShowCreateTransactionModal] = useState(false);
 
   const loadAllData = async () => {
     if (!isAuthenticated) return;
 
     try {
       setLoading(true);
-      const [fetchedTasks, fetchedEvents, fetchedAnalytics] = await Promise.all([
+      const [fetchedTasks, fetchedEvents, fetchedHabits, fetchedTransactions, fetchedAnalytics] = await Promise.all([
         TaskAPI.getAll().catch(() => []),
         ScheduleAPI.getAll().catch(() => []),
+        HabitAPI.getAll().catch(() => []),
+        TransactionAPI.getAll().catch(() => []),
         AnalyticsAPI.getSummary().catch(() => null)
       ]);
       setTasks(fetchedTasks);
       setEvents(fetchedEvents);
+      setHabits(fetchedHabits);
+      setTransactions(fetchedTransactions);
       setAnalytics(fetchedAnalytics);
     } catch (err) {
       console.error('Failed to load app data:', err);
@@ -46,6 +65,8 @@ const MainApp: React.FC = () => {
     } else {
       setTasks([]);
       setEvents([]);
+      setHabits([]);
+      setTransactions([]);
       setAnalytics(null);
     }
   }, [isAuthenticated]);
@@ -89,7 +110,12 @@ const MainApp: React.FC = () => {
   // Once authenticated, render main workspace
   return (
     <div className="app-container">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        analyticsCategory={analyticsCategory}
+        setAnalyticsCategory={setAnalyticsCategory}
+      />
 
       <div className="main-content">
         <Navbar
@@ -97,6 +123,8 @@ const MainApp: React.FC = () => {
           setActiveTab={setActiveTab}
           onOpenCreateTask={() => setShowCreateTaskModal(true)}
           onOpenCreateEvent={() => setShowCreateEventModal(true)}
+          onOpenCreateHabit={() => setShowCreateHabitModal(true)}
+          onOpenCreateTransaction={() => setShowCreateTransactionModal(true)}
         />
 
         <main className="content-body">
@@ -118,8 +146,30 @@ const MainApp: React.FC = () => {
             />
           )}
 
+          {activeTab === 'habits' && (
+            <HabitsView
+              habits={habits}
+              onRefresh={loadAllData}
+              showCreateModal={showCreateHabitModal}
+              onCloseCreateModal={() => setShowCreateHabitModal(false)}
+            />
+          )}
+
+          {activeTab === 'finances' && (
+            <FinancesView
+              transactions={transactions}
+              onRefresh={loadAllData}
+              showCreateModal={showCreateTransactionModal}
+              onCloseCreateModal={() => setShowCreateTransactionModal(false)}
+            />
+          )}
+
           {activeTab === 'analytics' && (
-            <AnalyticsView summary={analytics} />
+            <AnalyticsView 
+              summary={analytics} 
+              activeCategory={analyticsCategory}
+              onSelectCategory={setAnalyticsCategory}
+            />
           )}
         </main>
       </div>

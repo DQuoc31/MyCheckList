@@ -5,6 +5,8 @@ import { connectDB } from './config/db';
 import authRouter from './routes/auth';
 import tasksRouter from './routes/tasks';
 import scheduleRouter from './routes/schedule';
+import habitsRouter from './routes/habits';
+import transactionsRouter from './routes/transactions';
 import analyticsRouter from './routes/analytics';
 
 const app = express();
@@ -18,6 +20,8 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/schedule', scheduleRouter);
+app.use('/api/habits', habitsRouter);
+app.use('/api/transactions', transactionsRouter);
 app.use('/api/analytics', analyticsRouter);
 
 // Health check endpoint

@@ -1,14 +1,14 @@
 # 📋 TÀI LIỆU HƯỚNG DẪN VÀ KỊCH BẢN KIỂM THỬ THỦ CÔNG (MANUAL TESTING GUIDE)
 
-> **Dự án:** MyCheckList (Monorepo Checklist & Calendar Scheduler System)  
-> **Phiên bản:** 1.0.0  
-> **Cập nhật lần cuối:** 18/09/2026  
+> **Dự án:** MyCheckList (Monorepo Checklist, Calendar & Daily Activity Tracker System)  
+> **Phiên bản:** 1.1.0  
+> **Cập nhật lần cuối:** 19/09/2026  
 
 ---
 
 ## 📌 1. Mục đích và Môi trường Chuẩn bị
 
-Tài liệu này cung cấp danh sách đầy đủ các kịch bản kiểm thử thủ công (Manual Test Cases) cho các tính năng giao diện người dùng (UI), luồng tương tác End-to-End (E2E), cơ chế xác thực JWT và tính toàn vẹn dữ liệu đa người dùng.
+Tài liệu này cung cấp danh sách đầy đủ các kịch bản kiểm thử thủ công (Manual Test Cases) cho các tính năng giao diện người dùng (UI), luồng tương tác End-to-End (E2E), cơ chế xác thực JWT, lập lịch đa chế độ, theo dõi thói quen & lượng tiêu thụ và tính toàn vẹn dữ liệu đa người dùng.
 
 ### 🛠️ Điều kiện Tiền đề (Prerequisites)
 1. **Node.js & npm** đã được cài đặt trên máy.
@@ -202,7 +202,70 @@ Tài liệu này cung cấp danh sách đầy đủ các kịch bản kiểm th�
 
 ---
 
-### PHẦN IV: THỐNG KÊ & BÁO CÁO HIỆU SUẤT (ANALYTICS)
+### PHẦN IV: THEO DÕI THÓI QUEN & TIÊU THỤ HÀNG NGÀY (HABIT & INTAKE TRACKER)
+
+---
+
+#### 🔹 TC-HABIT-01: Tạo Thói quen nhanh từ Mẫu gợi ý (Preset)
+- **Summary:** Kiểm tra tạo thói quen uống nước / giấc ngủ từ các mẫu có sẵn.
+- **Các bước thực hiện:**
+  1. Chọn mục **"Thói quen & Tiêu thụ"** trên Menu bên trái.
+  2. Nhấn nút **"+ Thêm Thói Quen"** trên Header.
+  3. Trong danh sách mẫu gợi ý, nhấp vào thẻ **"Uống nước (2000 ml)"**.
+  4. Nhấn nút **"Tạo Thói Quen"**.
+- **Kết quả kỳ vọng:**
+  - Modal đóng lại, thẻ thói quen **"Uống nước mỗi ngày"** xuất hiện với icon giọt nước 💧, mục tiêu `2000 ml`, thanh tiến độ `0 / 2000 ml (0%)` và các nút nạp nhanh `+250 ml`, `+500 ml`.
+
+---
+
+#### 🔹 TC-HABIT-02: Ghi nhận nhanh Lượng tiêu thụ (Quick Log) & Thanh phát sáng
+- **Summary:** Kiểm tra nút nạp nhanh và cập nhật thanh tiến độ % trực quan.
+- **Các bước thực hiện:**
+  1. Tại thẻ "Uống nước mỗi ngày", nhấn nút **`+250 ml`**.
+  2. Quan sát lượng nước tăng lên `250 / 2000 ml (13%)`.
+  3. Nhấn tiếp nút **`+500 ml`** 3 lần (tổng cộng $250 + 1500 = 1750$ ml).
+  4. Nhấn tiếp **`+250 ml`** để đạt $2000$ ml ($100\%$).
+- **Kết quả kỳ vọng:**
+  - Thanh tiến độ phát sáng chuyển sang trạng thái xanh **`✓ Đã đạt`**.
+  - Thẻ tổng quan đầu trang cập nhật **Mục tiêu hoàn thành: 1 / 1 (100%)**.
+  - Badge Chuỗi ngày **`🔥 1 ngày`** xuất hiện trên thẻ thói quen.
+
+---
+
+#### 🔹 TC-HABIT-03: Tùy chỉnh nạp số lượng bất kỳ
+- **Summary:** Kiểm tra chức năng nhập số lượng tùy ý không nằm trong nút nạp nhanh.
+- **Các bước thực hiện:**
+  1. Nhấn nút **"Tùy chỉnh..."** trên thẻ thói quen.
+  2. Nhập số `350` vào hộp thoại prompt và nhấn OK.
+- **Kết quả kỳ vọng:**
+  - Lượng tiêu thụ được cộng thêm chính xác `+350` vào tổng lượng của ngày.
+
+---
+
+#### 🔹 TC-HABIT-04: Điều hướng ngày & Nhật ký quá khứ
+- **Summary:** Kiểm tra việc xem lại và ghi nhận dữ liệu cho các ngày trước đó.
+- **Các bước thực hiện:**
+  1. Nhấn nút `<` (Ngày hôm trước) trên bộ chọn ngày.
+  2. Kiểm tra tiến độ của ngày hôm qua (mặc định là `0`).
+  3. Nạp thử dữ liệu cho ngày hôm qua.
+  4. Nhấn nút **"Hôm nay"** để quay về ngày hiện tại.
+- **Kết quả kỳ vọng:**
+  - Dữ liệu giữa các ngày hoàn toàn độc lập và lưu trữ chuẩn xác theo từng mốc `YYYY-MM-DD`.
+
+---
+
+#### 🔹 TC-HABIT-05: Đặt lại (Reset) lượng tiêu thụ và Xóa thói quen
+- **Summary:** Kiểm tra việc reset giá trị ngày về 0 và xóa thói quen.
+- **Các bước thực hiện:**
+  1. Nhấn biểu tượng **Xoay tròn (RotateCcw Icon)** để đặt lại giá trị ngày hiện tại về 0.
+  2. Nhấn biểu tượng **Thùng rác (Trash Icon)** để xóa bỏ thói quen.
+- **Kết quả kỳ vọng:**
+  - Sau bước 1: Tiến độ ngày quay về `0 / 2000 ml (0%)`.
+  - Sau bước 2: Thói quen bị xóa hoàn toàn khỏi cơ sở dữ liệu.
+
+---
+
+### PHẦN V: THỐNG KÊ & BÁO CÁO HIỆU SUẤT (ANALYTICS)
 
 ---
 
@@ -220,17 +283,17 @@ Tài liệu này cung cấp danh sách đầy đủ các kịch bản kiểm th�
 
 ---
 
-### PHẦN V: TÍNH ĐỘC LẬP DỮ LIỆU ĐA NGƯỜI DÙNG (MULTI-USER DATA ISOLATION)
+### PHẦN VI: TÍNH ĐỘC LẬP DỮ LIỆU ĐA NGƯỜI DÙNG (MULTI-USER DATA ISOLATION)
 
 ---
 
 #### 🔹 TC-ISO-01: Phân tách dữ liệu giữa các tài khoản khác nhau
-- **Summary:** Đảm bảo Người dùng B tuyệt đối không nhìn thấy hoặc can thiệp vào Task/Lịch trình của Người dùng A.
+- **Summary:** Đảm bảo Người dùng B tuyệt đối không nhìn thấy hoặc can thiệp vào Task/Lịch trình/Thói quen của Người dùng A.
 - **Các bước thực hiện:**
-  1. Đăng nhập vào tài khoản **User A** (`user_a@test.com`) $\rightarrow$ Tạo 2 task và 1 lịch trình.
+  1. Đăng nhập vào tài khoản **User A** (`user_a@test.com`) $\rightarrow$ Tạo task, lịch trình và thói quen uống nước.
   2. Nhấn **"Đăng xuất"**.
   3. Đăng ký/Đăng nhập vào tài khoản **User B** (`user_b@test.com`).
-  4. Kiểm tra danh sách Checklist, Lịch biểu và Báo cáo của **User B**.
+  4. Kiểm tra danh sách Checklist, Lịch biểu, Thói quen và Báo cáo của **User B**.
 - **Kết quả kỳ vọng:**
-  - Không gian làm việc của **User B** hoàn toàn trống (không có task/lịch trình nào của User A).
+  - Không gian làm việc của **User B** hoàn toàn trống (không có bất kỳ dữ liệu nào của User A).
   - Mọi thao tác tạo mới của User B chỉ lưu riêng cho User B.
