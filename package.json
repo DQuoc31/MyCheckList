@@ -13,7 +13,9 @@
     "test": "vitest run",
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:frontend": "npm run dev --workspace=apps/frontend",
-    "build:shared": "npm run build --workspace=packages/shared"
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:backend": "npm run build:shared && npm run build --workspace=apps/backend",
+    "start:backend": "npm run start --workspace=apps/backend"
   },
   "devDependencies": {
     "@types/supertest": "^7.2.1",
