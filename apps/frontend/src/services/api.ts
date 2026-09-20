@@ -22,7 +22,8 @@ import {
   ComprehensiveAnalytics
 } from '@mychecklist/shared';
 
-const API_BASE = '/api';
+const envBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+const API_BASE = envBaseUrl ? `${envBaseUrl.replace(/\/$/, '')}/api` : '/api';
 const TOKEN_KEY = 'mychecklist_auth_token';
 
 export const getStoredToken = (): string | null => {
