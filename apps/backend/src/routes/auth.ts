@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/User';
@@ -23,7 +23,7 @@ const formatUser = (userDoc: any): IUser => ({
 });
 
 // POST /api/auth/register
-router.post('/register', async (req, res: Response<ApiResponse<AuthResponse>>) => {
+router.post('/register', async (req: Request, res: Response<ApiResponse<AuthResponse>>) => {
   try {
     const { name, email, password }: RegisterDto = req.body;
 
@@ -79,7 +79,7 @@ router.post('/register', async (req, res: Response<ApiResponse<AuthResponse>>) =
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res: Response<ApiResponse<AuthResponse>>) => {
+router.post('/login', async (req: Request, res: Response<ApiResponse<AuthResponse>>) => {
   try {
     const { email, password }: LoginDto = req.body;
 
