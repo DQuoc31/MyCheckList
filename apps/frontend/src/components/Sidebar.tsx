@@ -6,11 +6,10 @@ import {
   Droplets, 
   Wallet, 
   ChevronDown, 
-  ChevronRight,
-  Flame,
-  Layers,
-  PieChart,
-  Activity
+  ChevronRight, 
+  Flame, 
+  Activity,
+  X
 } from 'lucide-react';
 import { AnalyticsCategory } from '@mychecklist/shared';
 
@@ -21,13 +20,17 @@ interface SidebarProps {
   setActiveTab: (tab: AppTab) => void;
   analyticsCategory?: AnalyticsCategory;
   setAnalyticsCategory?: (cat: AnalyticsCategory) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   activeTab, 
   setActiveTab,
   analyticsCategory = 'TASKS',
-  setAnalyticsCategory 
+  setAnalyticsCategory,
+  isOpen = false,
+  onClose
 }) => {
   const [isAnalyticsExpanded, setIsAnalyticsExpanded] = useState(true);
 
@@ -46,136 +49,111 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'OVERVIEW', label: 'Báo Cáo Tổng Quan', icon: Activity, color: 'var(--accent-purple)' }
   ];
 
+  const handleSelectTab = (id: AppTab) => {
+    setActiveTab(id);
+    if (id === 'analytics') {
+      setIsAnalyticsExpanded(!isAnalyticsExpanded);
+    }
+    // On mobile, automatically close sidebar after choosing a tab
+    if (window.innerWidth <= 768 && onClose && id !== 'analytics') {
+      onClose();
+    }
+  };
+
   const handleSelectAnalyticsSub = (cat: AnalyticsCategory, e: React.MouseEvent) => {
     e.stopPropagation();
     if (setAnalyticsCategory) {
       setAnalyticsCategory(cat);
     }
     setActiveTab('analytics');
+    if (window.innerWidth <= 768 && onClose) {
+      onClose();
+    }
   };
 
   return (
-    <aside style={{
-      width: '250px',
-      borderRight: '1px solid var(--border-color)',
-      background: 'rgba(11, 15, 25, 0.95)',
-      padding: '1.5rem 0.85rem',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.4rem',
-      userSelect: 'none',
-      overflowY: 'auto'
-    }}>
-      <div style={{
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        color: 'var(--text-dim)',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        padding: '0 0.75rem 0.5rem 0.75rem'
-      }}>
-        Menu Quản Lý
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="sidebar-mobile-backdrop" 
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      {menuItems.map(item => {
-        const Icon = item.icon;
-        const isActive = activeTab === item.id;
-        const isAnalytics = item.id === 'analytics';
-
-        return (
-          <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-            <button
-              onClick={() => {
-                setActiveTab(item.id);
-                if (isAnalytics) {
-                  setIsAnalyticsExpanded(!isAnalyticsExpanded);
-                }
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 0.85rem',
-                borderRadius: 'var(--radius-md)',
-                border: 'none',
-                background: isActive
-                  ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1))'
-                  : 'transparent',
-                color: isActive ? '#fff' : 'var(--text-muted)',
-                borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                cursor: 'pointer',
-                fontWeight: isActive ? 600 : 400,
-                fontSize: '0.88rem',
-                textAlign: 'left',
-                transition: 'all 0.2s ease'
-              }}
+      <aside className={`app-sidebar ${isOpen ? 'mobile-open' : ''}`}>
+        {/* Mobile Header with close button */}
+        <div className="sidebar-header">
+          <div className="sidebar-title">Menu Quản Lý</div>
+          {onClose && (
+            <button 
+              onClick={onClose}
+              className="sidebar-close-btn show-on-mobile"
+              aria-label="Đóng menu"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Icon size={18} color={isActive ? 'var(--accent-primary)' : 'currentColor'} />
-                <span>{item.label}</span>
-              </div>
-
-              {isAnalytics && (
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsAnalyticsExpanded(!isAnalyticsExpanded);
-                  }}
-                  style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
-                >
-                  {isAnalyticsExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                </div>
-              )}
+              <X size={20} />
             </button>
+          )}
+        </div>
 
-            {/* Sub-items for Analytics in Sidebar */}
-            {isAnalytics && isAnalyticsExpanded && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.15rem',
-                paddingLeft: '1.25rem',
-                marginLeft: '0.75rem',
-                borderLeft: '1px dashed var(--border-color)',
-                marginTop: '0.15rem',
-                marginBottom: '0.35rem'
-              }}>
-                {analyticsSubItems.map(sub => {
-                  const SubIcon = sub.icon;
-                  const isSubActive = isActive && analyticsCategory === sub.id;
+        <div className="sidebar-nav-list">
+          {menuItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            const isAnalytics = item.id === 'analytics';
 
-                  return (
-                    <button
-                      key={sub.id}
-                      onClick={(e) => handleSelectAnalyticsSub(sub.id, e)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.45rem 0.65rem',
-                        borderRadius: 'var(--radius-sm)',
-                        border: 'none',
-                        background: isSubActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                        color: isSubActive ? '#fff' : 'var(--text-dim)',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: isSubActive ? 600 : 400,
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease'
+            return (
+              <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <button
+                  onClick={() => handleSelectTab(item.id)}
+                  className={`sidebar-nav-btn ${isActive ? 'active' : ''}`}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Icon size={18} color={isActive ? 'var(--accent-primary)' : 'currentColor'} />
+                    <span>{item.label}</span>
+                  </div>
+
+                  {isAnalytics && (
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAnalyticsExpanded(!isAnalyticsExpanded);
                       }}
+                      style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
                     >
-                      <SubIcon size={14} color={isSubActive ? sub.color : 'currentColor'} />
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {sub.label.replace('Thống kê ', '')}
-                      </span>
-                    </button>
-                  );
-                })}
+                      {isAnalyticsExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                    </div>
+                  )}
+                </button>
+
+                {/* Sub-items for Analytics in Sidebar */}
+                {isAnalytics && isAnalyticsExpanded && (
+                  <div className="sidebar-sub-menu">
+                    {analyticsSubItems.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = isActive && analyticsCategory === sub.id;
+
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={(e) => handleSelectAnalyticsSub(sub.id, e)}
+                          className={`sidebar-sub-btn ${isSubActive ? 'active' : ''}`}
+                        >
+                          <SubIcon size={14} color={isSubActive ? sub.color : 'currentColor'} />
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {sub.label.replace('Thống kê ', '')}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
-    </aside>
+            );
+          })}
+        </div>
+      </aside>
+    </>
   );
 };

@@ -571,7 +571,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
           {habits.map(habit => {
             const habitId = habit.id || habit._id || '';
             const currentValue = getHabitValueForDate(habit, selectedDateStr);

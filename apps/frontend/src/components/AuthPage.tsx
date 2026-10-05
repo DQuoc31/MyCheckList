@@ -66,7 +66,7 @@ export const AuthPage: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'radial-gradient(ellipse at top left, rgba(99, 102, 241, 0.15), transparent 60%), radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.15), transparent 60%), var(--bg-primary)',
-      padding: '2rem 1.5rem',
+      padding: '1.5rem 1rem',
       boxSizing: 'border-box',
       overflowY: 'auto'
     }}>
@@ -74,8 +74,8 @@ export const AuthPage: React.FC = () => {
         width: '100%',
         maxWidth: '1080px',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-        gap: '2.5rem',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '2rem',
         alignItems: 'center'
       }}>
         

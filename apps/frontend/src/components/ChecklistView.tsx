@@ -130,18 +130,27 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: 'var(--radius-md)' }}>
+        <div style={{ 
+          display: 'flex', 
+          gap: '0.35rem', 
+          background: 'rgba(0,0,0,0.3)', 
+          padding: '4px', 
+          borderRadius: 'var(--radius-md)',
+          overflowX: 'auto',
+          maxWidth: '100%'
+        }}>
           {['ALL', 'TODO', 'IN_PROGRESS', 'COMPLETED'].map(st => (
             <button
               key={st}
               onClick={() => setFilterStatus(st)}
               style={{
-                padding: '0.4rem 0.85rem',
+                padding: '0.4rem 0.75rem',
                 borderRadius: 'var(--radius-sm)',
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 fontWeight: 600,
                 border: 'none',
                 cursor: 'pointer',
+                whiteSpace: 'nowrap',
                 background: filterStatus === st ? 'var(--accent-primary)' : 'transparent',
                 color: filterStatus === st ? '#fff' : 'var(--text-muted)',
                 transition: 'all 0.2s ease'
@@ -171,21 +180,21 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
             return (
               <div key={taskId} className="glass-card" style={{ padding: '1.25rem', position: 'relative' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                       {getPriorityBadge(task.priority)}
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff' }}>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
                         {task.title}
                       </h3>
                     </div>
 
                     {task.description && (
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', wordBreak: 'break-word' }}>
                         {task.description}
                       </p>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
                       {(task.tags || []).map((tag, i) => (
                         <span key={i} className="tag-pill">
                           <Tag size={12} /> {tag}
@@ -200,7 +209,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
                     <button className="btn-icon" onClick={() => toggleExpand(taskId)}>
                       {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
@@ -233,7 +242,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.65rem',
-                            padding: '0.5rem 0.75rem',
+                            padding: '0.6rem 0.75rem',
                             background: subItem.completed ? 'rgba(16, 185, 129, 0.05)' : 'rgba(0, 0, 0, 0.2)',
                             borderRadius: 'var(--radius-sm)',
                             cursor: 'pointer',
@@ -242,14 +251,15 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                           }}
                         >
                           {subItem.completed ? (
-                            <CheckSquare size={16} color="var(--accent-success)" />
+                            <CheckSquare size={18} color="var(--accent-success)" style={{ flexShrink: 0 }} />
                           ) : (
-                            <Square size={16} color="var(--text-dim)" />
+                            <Square size={18} color="var(--text-dim)" style={{ flexShrink: 0 }} />
                           )}
                           <span style={{
                             fontSize: '0.875rem',
                             color: subItem.completed ? 'var(--text-dim)' : 'var(--text-main)',
-                            textDecoration: subItem.completed ? 'line-through' : 'none'
+                            textDecoration: subItem.completed ? 'line-through' : 'none',
+                            wordBreak: 'break-word'
                           }}>
                             {subItem.title}
                           </span>
@@ -295,7 +305,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Mức độ ưu tiên</label>
                   <select

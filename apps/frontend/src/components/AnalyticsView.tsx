@@ -144,8 +144,8 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       {/* Category Navigation Bar (Synchronized with Sidebar) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-        gap: '0.75rem',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '0.6rem',
         background: 'rgba(0, 0, 0, 0.25)',
         padding: '0.5rem',
         borderRadius: 'var(--radius-lg)',

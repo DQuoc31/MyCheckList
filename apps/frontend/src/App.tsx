@@ -10,6 +10,7 @@ import {
 } from '@mychecklist/shared';
 import { Navbar } from './components/Navbar';
 import { Sidebar, AppTab } from './components/Sidebar';
+import { BottomNav } from './components/BottomNav';
 import { ChecklistView } from './components/ChecklistView';
 import { CalendarView } from './components/CalendarView';
 import { HabitsView } from './components/HabitsView';
@@ -23,6 +24,8 @@ const MainApp: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<AppTab>('checklist');
   const [analyticsCategory, setAnalyticsCategory] = useState<AnalyticsCategory>('TASKS');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [tasks, setTasks] = useState<ITask[]>([]);
   const [events, setEvents] = useState<IScheduleEvent[]>([]);
   const [habits, setHabits] = useState<IHabitTracker[]>([]);
@@ -115,6 +118,8 @@ const MainApp: React.FC = () => {
         setActiveTab={setActiveTab} 
         analyticsCategory={analyticsCategory}
         setAnalyticsCategory={setAnalyticsCategory}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
       <div className="main-content">
@@ -125,6 +130,7 @@ const MainApp: React.FC = () => {
           onOpenCreateEvent={() => setShowCreateEventModal(true)}
           onOpenCreateHabit={() => setShowCreateHabitModal(true)}
           onOpenCreateTransaction={() => setShowCreateTransactionModal(true)}
+          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
         />
 
         <main className="content-body">
@@ -172,6 +178,12 @@ const MainApp: React.FC = () => {
             />
           )}
         </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <BottomNav 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
       </div>
     </div>
   );

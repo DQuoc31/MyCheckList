@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { IScheduleEvent } from '@mychecklist/shared';
 import { 
   Calendar as CalendarIcon, 
@@ -8,11 +8,12 @@ import {
   Edit3,
   ChevronLeft, 
   ChevronRight, 
-  CalendarRange,
-  LayoutGrid,
-  Filter,
-  X,
-  AlertTriangle
+  CalendarRange, 
+  LayoutGrid, 
+  Filter, 
+  X, 
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 import { ScheduleAPI } from '../services/api';
 
@@ -38,7 +39,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedWeekDay, setSelectedWeekDay] = useState<Date>(new Date());
+  const [selectedMonthDay, setSelectedMonthDay] = useState<Date>(new Date());
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+
+  // Synchronize selected day when currentDate changes
+  useEffect(() => {
+    setSelectedWeekDay(new Date(currentDate));
+    setSelectedMonthDay(new Date(currentDate));
+  }, [currentDate]);
 
   // Modal State (Create & Edit)
   const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
@@ -446,29 +455,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     };
 
     return (
-      <div className="glass-card" style={{ padding: '1.5rem', overflow: 'hidden' }}>
+      <div className="glass-card" style={{ padding: '1.25rem', overflow: 'hidden' }}>
         {/* Banner Helper */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '1.25rem',
-          paddingBottom: '0.85rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          gap: '0.6rem',
+          marginBottom: '1rem',
+          paddingBottom: '0.75rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          color: 'var(--text-muted)',
+          fontSize: '0.8rem',
+          lineHeight: 1.4
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            <Clock size={16} style={{ color: '#818cf8' }} />
-            <span>
-              Card lịch trình tự động <strong>kéo dài theo thời lượng thực tế</strong>. Nhấn vào card để chỉnh sửa hoặc nhấn vào khoảng trống để tạo mới.
-            </span>
-          </div>
-          <button
-            onClick={() => handleOpenCreateAtSlot(currentDate)}
-            className="btn btn-primary"
-            style={{ fontSize: '0.825rem', padding: '0.4rem 0.85rem', whiteSpace: 'nowrap' }}
-          >
-            <Plus size={15} /> Thêm Lịch Trình
-          </button>
+          <Clock size={16} style={{ color: '#818cf8', flexShrink: 0 }} />
+          <span>
+            Khung giờ tự động <strong>kéo dài theo thời lượng</strong>. Chạm vào khoảng trống bất kỳ để đặt lịch nhanh.
+          </span>
         </div>
 
         {/* Timeline Container */}
@@ -480,7 +483,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         }}>
           {/* Left Time Axis Labels */}
           <div style={{
-            width: '65px',
+            width: '52px',
             flexShrink: 0,
             position: 'relative',
             borderRight: '1px solid rgba(255, 255, 255, 0.1)'
@@ -496,8 +499,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     width: '100%',
                     transform: 'translateY(-50%)',
                     textAlign: 'right',
-                    paddingRight: '12px',
-                    fontSize: '0.75rem',
+                    paddingRight: '8px',
+                    fontSize: '0.72rem',
                     color: 'var(--text-dim)',
                     fontWeight: 600
                   }}
@@ -592,15 +595,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     position: 'absolute',
                     top: `${top}px`,
                     height: `${height}px`,
-                    left: `calc(${left}% + 4px)`,
-                    width: `calc(${width}% - 8px)`,
+                    left: `calc(${left}% + 3px)`,
+                    width: `calc(${width}% - 6px)`,
                     borderRadius: '8px',
                     background: `linear-gradient(135deg, ${color}33, rgba(15, 23, 42, 0.94))`,
                     borderLeft: `4px solid ${color}`,
                     borderTop: '1px solid rgba(255, 255, 255, 0.12)',
                     borderRight: '1px solid rgba(255, 255, 255, 0.08)',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: isShort ? '4px 10px' : '8px 12px',
+                    padding: isShort ? '3px 8px' : '6px 10px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'flex-start',
@@ -619,12 +622,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     width: '100%',
-                    gap: '0.5rem'
+                    gap: '0.4rem'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0, flex: 1 }}>
                       <span style={{
-                        fontSize: '0.65rem',
-                        padding: '1px 6px',
+                        fontSize: '0.62rem',
+                        padding: '1px 5px',
                         borderRadius: '4px',
                         background: color,
                         color: '#fff',
@@ -636,7 +639,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         {getCategoryLabel(evt.category)}
                       </span>
                       <span style={{
-                        fontSize: '0.875rem',
+                        fontSize: '0.825rem',
                         fontWeight: 700,
                         color: '#fff',
                         whiteSpace: 'nowrap',
@@ -652,58 +655,58 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.25rem',
+                        gap: '2px',
                         flexShrink: 0,
                         background: 'rgba(0, 0, 0, 0.35)',
                         backdropFilter: 'blur(4px)',
                         borderRadius: '6px',
-                        padding: '2px 4px',
+                        padding: '1px 3px',
                         border: '1px solid rgba(255, 255, 255, 0.08)'
                       }}
                       onClick={e => e.stopPropagation()}
                     >
                       <button
                         className="btn-icon"
-                        style={{ padding: '3px', color: '#cbd5e1', borderRadius: '4px' }}
+                        style={{ padding: '2px', color: '#cbd5e1', borderRadius: '4px' }}
                         onClick={(e) => handleOpenEditModal(evt, e)}
                         title="Chỉnh sửa thông tin"
                       >
-                        <Edit3 size={13} />
+                        <Edit3 size={12} />
                       </button>
                       <button
                         className="btn-icon"
-                        style={{ padding: '3px', color: '#f87171', borderRadius: '4px' }}
+                        style={{ padding: '2px', color: '#f87171', borderRadius: '4px' }}
                         onClick={(e) => promptDeleteEvent(evt, e)}
                         title="Xóa lịch trình"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
 
                   {/* Time Info */}
                   <div style={{
-                    fontSize: '0.75rem',
+                    fontSize: '0.72rem',
                     color: 'var(--text-muted)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.35rem',
-                    marginTop: isShort ? '0px' : '4px'
+                    gap: '0.3rem',
+                    marginTop: isShort ? '0px' : '3px'
                   }}>
-                    <Clock size={11} style={{ color }} />
-                    <span>{startFormatted} - {endFormatted} ({durationMinutes} phút)</span>
+                    <Clock size={10} style={{ color }} />
+                    <span>{startFormatted} - {endFormatted} ({durationMinutes}p)</span>
                   </div>
 
-                  {/* Description / Notes (if height permits) */}
-                  {evt.description && height >= 75 && (
+                  {/* Description / Notes */}
+                  {evt.description && height >= 70 && (
                     <p style={{
-                      fontSize: '0.725rem',
+                      fontSize: '0.7rem',
                       color: 'rgba(255, 255, 255, 0.65)',
-                      margin: '4px 0 0 0',
+                      margin: '2px 0 0 0',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       display: '-webkit-box',
-                      WebkitLineClamp: Math.max(1, Math.floor((height - 65) / 18)),
+                      WebkitLineClamp: Math.max(1, Math.floor((height - 55) / 16)),
                       WebkitBoxOrient: 'vertical'
                     }}>
                       {evt.description}
@@ -719,7 +722,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   // -------------------------------------------------------------
-  // 2. WEEK VIEW
+  // 2. WEEK VIEW (Responsive: Desktop 7-Cols Grid, Mobile 7-Day Strip + Event List)
   // -------------------------------------------------------------
   const renderWeekView = () => {
     const dayOfWeek = currentDate.getDay();
@@ -736,155 +739,332 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     const today = new Date();
 
+    const selectedDayEvents = filteredEvents.filter(evt => {
+      try {
+        return isSameDay(new Date(evt.startTime), selectedWeekDay);
+      } catch {
+        return false;
+      }
+    });
+    selectedDayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
     return (
-      <div className="glass-card" style={{ padding: '1.25rem', overflowX: 'auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(150px, 1fr))', gap: '0.75rem', minWidth: '1050px' }}>
-          {weekDays.map((day, idx) => {
-            const isToday = isSameDay(day, today);
-            const isSelected = isSameDay(day, currentDate);
-            const dayEvents = filteredEvents.filter(evt => {
-              try {
-                return isSameDay(new Date(evt.startTime), day);
-              } catch {
-                return false;
-              }
-            });
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+        {/* Mobile View: 7-Day Strip Selector & Selected Day Detail List */}
+        <div className="show-on-mobile" style={{ display: 'none', flexDirection: 'column', gap: '0.85rem', width: '100%' }}>
+          {/* 7-Day Strip */}
+          <div className="glass-card" style={{ padding: '0.65rem 0.5rem', width: '100%' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', textAlign: 'center' }}>
+              {weekDays.map((day, idx) => {
+                const isToday = isSameDay(day, today);
+                const isSelected = isSameDay(day, selectedWeekDay);
+                const dayEvts = filteredEvents.filter(evt => {
+                  try {
+                    return isSameDay(new Date(evt.startTime), day);
+                  } catch {
+                    return false;
+                  }
+                });
 
-            dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-
-            return (
-              <div
-                key={idx}
-                onClick={() => handleOpenCreateAtSlot(day)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  background: isToday 
-                    ? 'rgba(99, 102, 241, 0.08)' 
-                    : 'rgba(255, 255, 255, 0.02)',
-                  border: isToday 
-                    ? '1px solid rgba(99, 102, 241, 0.5)' 
-                    : isSelected 
-                      ? '1px solid rgba(255, 255, 255, 0.25)' 
-                      : '1px solid var(--border-color)',
-                  borderRadius: 'var(--radius-md)',
-                  minHeight: '520px',
-                  padding: '0.75rem',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s ease, background 0.15s ease'
-                }}
-                className="calendar-week-col"
-              >
-                {/* Column Header */}
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentDate(day);
-                    setViewMode('day');
-                  }}
-                  style={{
-                    textAlign: 'center',
-                    paddingBottom: '0.75rem',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    cursor: 'pointer'
-                  }}
-                  title="Nhấn để mở chế độ xem ngày chi tiết"
-                >
-                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isToday ? '#818cf8' : 'var(--text-muted)' }}>
-                    {dayLabels[idx]}
-                  </div>
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    margin: '0.25rem auto 0',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    background: isToday ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'transparent',
-                    color: isToday ? '#fff' : 'var(--text-main)',
-                    boxShadow: isToday ? '0 0 12px rgba(99, 102, 241, 0.4)' : 'none'
-                  }}>
-                    {day.getDate()}
-                  </div>
-                </div>
-
-                {/* Events list in this day */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
-                  {dayEvents.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.2)' }}>
-                      <div>+ Nhấn đặt lịch</div>
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedWeekDay(day)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      padding: '0.45rem 0.15rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: isSelected 
+                        ? '1.5px solid var(--accent-primary)' 
+                        : isToday 
+                          ? '1px solid rgba(99, 102, 241, 0.4)' 
+                          : '1px solid transparent',
+                      background: isSelected 
+                        ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2))' 
+                        : isToday 
+                          ? 'rgba(99, 102, 241, 0.08)' 
+                          : 'rgba(255, 255, 255, 0.02)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: isSelected ? '#818cf8' : 'var(--text-muted)' }}>
+                      {dayLabels[idx]}
+                    </span>
+                    <span style={{
+                      fontSize: '0.9rem',
+                      fontWeight: isSelected || isToday ? 700 : 500,
+                      color: isSelected ? '#fff' : isToday ? '#818cf8' : 'var(--text-main)',
+                      marginTop: '2px'
+                    }}>
+                      {day.getDate()}
+                    </span>
+                    {/* Event count dot */}
+                    <div style={{ height: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '3px' }}>
+                      {dayEvts.length > 0 && (
+                        <span style={{
+                          width: '5px',
+                          height: '5px',
+                          borderRadius: '50%',
+                          background: isSelected ? 'var(--accent-primary)' : '#818cf8',
+                          boxShadow: '0 0 6px rgba(99, 102, 241, 0.8)'
+                        }} />
+                      )}
                     </div>
-                  ) : (
-                    dayEvents.map(evt => {
-                      const evtId = evt.id || evt._id || '';
-                      const color = evt.color || getCategoryColor(evt.category);
-                      return (
-                        <div
-                          key={evtId}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Day Event List */}
+          <div className="glass-card" style={{ padding: '1rem', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+                  {['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][selectedWeekDay.getDay()]}, {selectedWeekDay.getDate()}/{selectedWeekDay.getMonth() + 1}
+                </h4>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {selectedDayEvents.length} lịch trình trong ngày
+                </p>
+              </div>
+              <button
+                onClick={() => handleOpenCreateAtSlot(selectedWeekDay)}
+                className="btn btn-primary"
+                style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+              >
+                <Plus size={14} /> Thêm Lịch
+              </button>
+            </div>
+
+            {selectedDayEvents.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '1.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                <p style={{ marginBottom: '0.75rem' }}>Chưa có lịch trình nào cho ngày này.</p>
+                <button
+                  onClick={() => handleOpenCreateAtSlot(selectedWeekDay)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
+                >
+                  <Plus size={14} /> Đặt lịch ngay
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {selectedDayEvents.map(evt => {
+                  const evtId = evt.id || evt._id || '';
+                  const color = evt.color || getCategoryColor(evt.category);
+                  return (
+                    <div
+                      key={evtId}
+                      onClick={(e) => handleOpenEditModal(evt, e)}
+                      style={{
+                        padding: '0.75rem 0.85rem',
+                        borderRadius: 'var(--radius-md)',
+                        background: `linear-gradient(135deg, ${color}22, rgba(15, 23, 42, 0.85))`,
+                        borderLeft: `4px solid ${color}`,
+                        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
+                            {getCategoryLabel(evt.category)}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <Clock size={11} /> {formatTime(evt.startTime)} - {formatTime(evt.endTime)}
+                          </span>
+                        </div>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+                          {evt.title}
+                        </h5>
+                        {evt.description && (
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px', wordBreak: 'break-word' }}>
+                            {evt.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <button
                           onClick={(e) => handleOpenEditModal(evt, e)}
-                          style={{
-                            padding: '0.6rem 0.7rem',
-                            borderRadius: '8px',
-                            background: `linear-gradient(135deg, ${color}33, rgba(15, 23, 42, 0.7))`,
-                            borderLeft: `3px solid ${color}`,
-                            borderTop: '1px solid rgba(255,255,255,0.08)',
-                            borderRight: '1px solid rgba(255,255,255,0.05)',
-                            borderBottom: '1px solid rgba(255,255,255,0.05)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.25rem',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                            cursor: 'pointer'
-                          }}
-                          className="schedule-week-event-card"
-                          title="Nhấn để chỉnh sửa"
+                          className="btn-icon"
+                          style={{ padding: '0.35rem' }}
+                          title="Sửa"
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
-                              {getCategoryLabel(evt.category)}
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={e => e.stopPropagation()}>
-                              <button
-                                onClick={(e) => handleOpenEditModal(evt, e)}
-                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '2px' }}
-                                title="Sửa"
-                              >
-                                <Edit3 size={12} />
-                              </button>
-                              <button
-                                onClick={(e) => promptDeleteEvent(evt, e)}
-                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
-                                title="Xóa"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+                          <Edit3 size={15} />
+                        </button>
+                        <button
+                          onClick={(e) => promptDeleteEvent(evt, e)}
+                          className="btn-icon"
+                          style={{ color: '#f87171', padding: '0.35rem' }}
+                          title="Xóa"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop View: Full 7-column table */}
+        <div className="hide-on-mobile glass-card" style={{ padding: '1.25rem', overflowX: 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))', gap: '0.75rem', minWidth: '950px' }}>
+            {weekDays.map((day, idx) => {
+              const isToday = isSameDay(day, today);
+              const isSelected = isSameDay(day, currentDate);
+              const dayEvents = filteredEvents.filter(evt => {
+                try {
+                  return isSameDay(new Date(evt.startTime), day);
+                } catch {
+                  return false;
+                }
+              });
+              dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => handleOpenCreateAtSlot(day)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: isToday 
+                      ? 'rgba(99, 102, 241, 0.08)' 
+                      : 'rgba(255, 255, 255, 0.02)',
+                    border: isToday 
+                      ? '1px solid rgba(99, 102, 241, 0.5)' 
+                      : isSelected 
+                        ? '1px solid rgba(255, 255, 255, 0.25)' 
+                        : '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-md)',
+                    minHeight: '520px',
+                    padding: '0.75rem',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s ease, background 0.15s ease'
+                  }}
+                  className="calendar-week-col"
+                >
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentDate(day);
+                      setViewMode('day');
+                    }}
+                    style={{
+                      textAlign: 'center',
+                      paddingBottom: '0.75rem',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                      cursor: 'pointer'
+                    }}
+                    title="Nhấn để mở chế độ xem ngày chi tiết"
+                  >
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isToday ? '#818cf8' : 'var(--text-muted)' }}>
+                      {dayLabels[idx]}
+                    </div>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      margin: '0.25rem auto 0',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      background: isToday ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'transparent',
+                      color: isToday ? '#fff' : 'var(--text-main)',
+                      boxShadow: isToday ? '0 0 12px rgba(99, 102, 241, 0.4)' : 'none'
+                    }}>
+                      {day.getDate()}
+                    </div>
+                  </div>
+
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    {dayEvents.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem 0', fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.2)' }}>
+                        <div>+ Nhấn đặt lịch</div>
+                      </div>
+                    ) : (
+                      dayEvents.map(evt => {
+                        const evtId = evt.id || evt._id || '';
+                        const color = evt.color || getCategoryColor(evt.category);
+                        return (
+                          <div
+                            key={evtId}
+                            onClick={(e) => handleOpenEditModal(evt, e)}
+                            style={{
+                              padding: '0.6rem 0.7rem',
+                              borderRadius: '8px',
+                              background: `linear-gradient(135deg, ${color}33, rgba(15, 23, 42, 0.7))`,
+                              borderLeft: `3px solid ${color}`,
+                              borderTop: '1px solid rgba(255,255,255,0.08)',
+                              borderRight: '1px solid rgba(255,255,255,0.05)',
+                              borderBottom: '1px solid rgba(255,255,255,0.05)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.25rem',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                              cursor: 'pointer'
+                            }}
+                            className="schedule-week-event-card"
+                            title="Nhấn để chỉnh sửa"
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
+                                {getCategoryLabel(evt.category)}
+                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={e => e.stopPropagation()}>
+                                <button
+                                  onClick={(e) => handleOpenEditModal(evt, e)}
+                                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '2px' }}
+                                  title="Sửa"
+                                >
+                                  <Edit3 size={12} />
+                                </button>
+                                <button
+                                  onClick={(e) => promptDeleteEvent(evt, e)}
+                                  style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
+                                  title="Xóa"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: '0.825rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+                              {evt.title}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <Clock size={10} style={{ color }} />
+                              <span>{formatTime(evt.startTime)} - {formatTime(evt.endTime)}</span>
                             </div>
                           </div>
-                          <div style={{ fontSize: '0.825rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
-                            {evt.title}
-                          </div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Clock size={10} style={{ color }} />
-                            <span>{formatTime(evt.startTime)} - {formatTime(evt.endTime)}</span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     );
   };
 
   // -------------------------------------------------------------
-  // 3. MONTH VIEW
+  // 3. MONTH VIEW (Responsive: 100% width on mobile + selected date event sheet)
   // -------------------------------------------------------------
   const renderMonthView = () => {
     const year = currentDate.getFullYear();
@@ -903,140 +1083,252 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       return d;
     });
 
-    const dayLabels = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+    const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     const today = new Date();
 
+    const selectedDayEvents = filteredEvents.filter(evt => {
+      try {
+        return isSameDay(new Date(evt.startTime), selectedMonthDay);
+      } catch {
+        return false;
+      }
+    });
+    selectedDayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
     return (
-      <div className="glass-card" style={{ padding: '1.25rem' }}>
-        {/* Day Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', marginBottom: '0.75rem', textAlign: 'center' }}>
-          {dayLabels.map((lbl, idx) => (
-            <div key={idx} style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', padding: '0.4rem 0' }}>
-              {lbl}
-            </div>
-          ))}
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
+        {/* Month Grid Card (Fits 100% on all screens) */}
+        <div className="glass-card" style={{ padding: '0.85rem 0.65rem', width: '100%' }}>
+          {/* Day Header */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem', marginBottom: '0.5rem', textAlign: 'center' }}>
+            {dayLabels.map((lbl, idx) => (
+              <div key={idx} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', padding: '0.2rem 0' }}>
+                {lbl}
+              </div>
+            ))}
+          </div>
 
-        {/* Month Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-          {calendarDays.map((day, idx) => {
-            const isCurrentMonth = day.getMonth() === month;
-            const isToday = isSameDay(day, today);
-            const isSelected = isSameDay(day, currentDate);
-            const dayEvents = filteredEvents.filter(evt => {
-              try {
-                return isSameDay(new Date(evt.startTime), day);
-              } catch {
-                return false;
-              }
-            });
+          {/* Month 7-Cols Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.25rem' }}>
+            {calendarDays.map((day, idx) => {
+              const isCurrentMonth = day.getMonth() === month;
+              const isToday = isSameDay(day, today);
+              const isSelected = isSameDay(day, selectedMonthDay);
+              const dayEvents = filteredEvents.filter(evt => {
+                try {
+                  return isSameDay(new Date(evt.startTime), day);
+                } catch {
+                  return false;
+                }
+              });
 
-            return (
-              <div
-                key={idx}
-                onClick={() => handleOpenCreateAtSlot(day)}
-                style={{
-                  minHeight: '105px',
-                  borderRadius: 'var(--radius-md)',
-                  background: isToday 
-                    ? 'rgba(99, 102, 241, 0.12)' 
-                    : isCurrentMonth 
-                      ? 'rgba(255, 255, 255, 0.02)' 
-                      : 'rgba(0, 0, 0, 0.2)',
-                  border: isToday 
-                    ? '1px solid rgba(99, 102, 241, 0.5)' 
-                    : isSelected 
-                      ? '1px solid rgba(255, 255, 255, 0.3)' 
-                      : '1px solid var(--border-color)',
-                  padding: '0.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  cursor: 'pointer',
-                  opacity: isCurrentMonth ? 1 : 0.4,
-                  transition: 'all 0.15s ease'
-                }}
-                className="calendar-month-cell"
-              >
-                {/* Date number */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                  <span style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
+              return (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setSelectedMonthDay(day);
+                    setCurrentDate(day);
+                    setViewMode('day');
+                  }}
+                  style={{
+                    minHeight: '52px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: isSelected 
+                      ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2))' 
+                      : isToday 
+                        ? 'rgba(99, 102, 241, 0.1)' 
+                        : isCurrentMonth 
+                          ? 'rgba(255, 255, 255, 0.02)' 
+                          : 'rgba(0, 0, 0, 0.2)',
+                    border: isSelected 
+                      ? '1.5px solid var(--accent-primary)' 
+                      : isToday 
+                        ? '1px solid rgba(99, 102, 241, 0.5)' 
+                        : '1px solid var(--border-color)',
+                    padding: '0.35rem 0.25rem',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.8rem',
-                    fontWeight: isToday ? 700 : 500,
-                    background: isToday ? '#6366f1' : 'transparent',
-                    color: isToday ? '#fff' : isCurrentMonth ? 'var(--text-main)' : 'var(--text-dim)'
-                  }}>
-                    {day.getDate()}
-                  </span>
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    opacity: isCurrentMonth ? 1 : 0.4,
+                    transition: 'all 0.15s ease'
+                  }}
+                  className="calendar-month-cell"
+                >
+                  {/* Date number */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                    <span style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.78rem',
+                      fontWeight: isToday || isSelected ? 700 : 500,
+                      background: isSelected ? 'var(--accent-primary)' : isToday ? '#6366f1' : 'transparent',
+                      color: isSelected || isToday ? '#fff' : isCurrentMonth ? 'var(--text-main)' : 'var(--text-dim)'
+                    }}>
+                      {day.getDate()}
+                    </span>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    {/* Desktop badge */}
                     {dayEvents.length > 0 && (
-                      <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 600 }}>
-                        {dayEvents.length} mốc
+                      <span className="hide-on-mobile" style={{ fontSize: '0.62rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 600 }}>
+                        {dayEvents.length}
                       </span>
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentDate(day);
-                        setViewMode('day');
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'rgba(255, 255, 255, 0.4)',
-                        fontSize: '0.65rem',
-                        cursor: 'pointer',
-                        padding: '1px 4px'
-                      }}
-                      title="Xem chi tiết ngày"
-                    >
-                      Chi tiết
-                    </button>
+                  </div>
+
+                  {/* Desktop Event Previews */}
+                  <div className="hide-on-mobile" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                    {dayEvents.slice(0, 2).map(evt => {
+                      const evtId = evt.id || evt._id || '';
+                      const color = evt.color || getCategoryColor(evt.category);
+                      return (
+                        <div
+                          key={evtId}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditModal(evt, e);
+                          }}
+                          style={{
+                            fontSize: '0.65rem',
+                            padding: '1px 4px',
+                            borderRadius: '3px',
+                            background: `${color}33`,
+                            borderLeft: `2px solid ${color}`,
+                            color: '#fff',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            cursor: 'pointer'
+                          }}
+                          title={`${formatTime(evt.startTime)} - ${evt.title}`}
+                        >
+                          {formatTime(evt.startTime)} {evt.title}
+                        </div>
+                      );
+                    })}
+                    {dayEvents.length > 2 && (
+                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                        +{dayEvents.length - 2} mốc
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile colorful event dots */}
+                  <div className="show-on-mobile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px', marginTop: 'auto' }}>
+                    {dayEvents.slice(0, 3).map((evt, i) => (
+                      <span 
+                        key={i} 
+                        style={{
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          background: evt.color || getCategoryColor(evt.category)
+                        }} 
+                      />
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <span style={{ fontSize: '0.55rem', color: 'var(--text-dim)', lineHeight: 1 }}>+</span>
+                    )}
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                {/* Event previews in month cell */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px', overflow: 'hidden' }}>
-                  {dayEvents.slice(0, 3).map(evt => {
-                    const evtId = evt.id || evt._id || '';
-                    const color = evt.color || getCategoryColor(evt.category);
-                    return (
-                      <div
-                        key={evtId}
-                        onClick={(e) => handleOpenEditModal(evt, e)}
-                        style={{
-                          fontSize: '0.7rem',
-                          padding: '2px 5px',
-                          borderRadius: '4px',
-                          background: `${color}33`,
-                          borderLeft: `2px solid ${color}`,
-                          color: '#fff',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          cursor: 'pointer'
-                        }}
-                        title={`${formatTime(evt.startTime)} - ${evt.title}`}
-                      >
-                        {formatTime(evt.startTime)} {evt.title}
+        {/* Mobile Detail Sheet below Month Grid */}
+        <div className="glass-card show-on-mobile" style={{ padding: '1rem', width: '100%', display: 'none', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+                {['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'][selectedMonthDay.getDay()]}, {selectedMonthDay.getDate()}/{selectedMonthDay.getMonth() + 1}/{selectedMonthDay.getFullYear()}
+              </h4>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {selectedDayEvents.length} lịch trình trong ngày
+              </p>
+            </div>
+            <button
+              onClick={() => handleOpenCreateAtSlot(selectedMonthDay)}
+              className="btn btn-primary"
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem' }}
+            >
+              <Plus size={14} /> Thêm Lịch
+            </button>
+          </div>
+
+          {selectedDayEvents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '1.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <p style={{ marginBottom: '0.5rem' }}>Chưa có lịch trình nào vào ngày này.</p>
+              <button
+                onClick={() => handleOpenCreateAtSlot(selectedMonthDay)}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+              >
+                <Plus size={14} /> Đặt lịch ngay
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {selectedDayEvents.map(evt => {
+                const evtId = evt.id || evt._id || '';
+                const color = evt.color || getCategoryColor(evt.category);
+                return (
+                  <div
+                    key={evtId}
+                    onClick={(e) => handleOpenEditModal(evt, e)}
+                    style={{
+                      padding: '0.75rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      background: `linear-gradient(135deg, ${color}22, rgba(15, 23, 42, 0.85))`,
+                      borderLeft: `4px solid ${color}`,
+                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
+                          {getCategoryLabel(evt.category)}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <Clock size={11} /> {formatTime(evt.startTime)} - {formatTime(evt.endTime)}
+                        </span>
                       </div>
-                    );
-                  })}
-                  {dayEvents.length > 3 && (
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                      +{dayEvents.length - 3} sự kiện
+                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+                        {evt.title}
+                      </h5>
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => handleOpenEditModal(evt, e)}
+                        className="btn-icon"
+                        style={{ padding: '0.35rem' }}
+                        title="Sửa"
+                      >
+                        <Edit3 size={15} />
+                      </button>
+                      <button
+                        onClick={(e) => promptDeleteEvent(evt, e)}
+                        className="btn-icon"
+                        style={{ color: '#f87171', padding: '0.35rem' }}
+                        title="Xóa"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1068,41 +1360,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         }
         .calendar-month-cell:hover {
           border-color: rgba(99, 102, 241, 0.4) !important;
-          transform: translateY(-2px);
+          transform: translateY(-1px);
         }
       `}</style>
 
-      {/* Top Controls: Title, View Switcher, Date Navigator, Category Filter */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '1rem',
-        padding: '0.5rem 0'
-      }}>
-        {/* Left: View Title & Date Navigator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', padding: '2px', border: '1px solid var(--border-color)' }}>
+      {/* Top Controls: Clean 2-Row Responsive Toolbar */}
+      <div className="calendar-toolbar-container">
+        {/* Row 1: Date Navigator & Title */}
+        <div className="calendar-nav-row">
+          <div className="calendar-nav-pill">
             <button
               onClick={handlePrev}
               className="btn-icon"
               title="Khoảng trước"
-              style={{ padding: '0.4rem' }}
+              style={{ padding: '0.35rem' }}
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={handleToday}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-main)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                padding: '0.4rem 0.75rem',
-                cursor: 'pointer'
-              }}
+              className="calendar-today-btn"
             >
               Hôm nay
             </button>
@@ -1110,27 +1387,68 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               onClick={handleNext}
               className="btn-icon"
               title="Khoảng tiếp theo"
-              style={{ padding: '0.4rem' }}
+              style={{ padding: '0.35rem' }}
             >
               <ChevronRight size={18} />
             </button>
           </div>
 
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>
+          <div className="calendar-date-search-wrapper" title="Nhập hoặc chọn ngày để nhảy đến lịch trình">
+            <Search size={14} className="calendar-search-icon" />
+            <input
+              type="date"
+              className="calendar-date-input"
+              value={formatLocalDate(currentDate)}
+              onChange={(e) => {
+                if (e.target.value) {
+                  const [y, m, d] = e.target.value.split('-').map(Number);
+                  if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                    const targetDate = new Date(y, m - 1, d);
+                    setCurrentDate(targetDate);
+                    setViewMode('day');
+                  }
+                }
+              }}
+              aria-label="Tìm kiếm ngày"
+            />
+          </div>
+
+          <h2 className="calendar-title-text">
             {getHeaderTitle()}
           </h2>
         </div>
 
-        {/* Right: View Mode Toggle & Category Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {/* Row 2: View Mode Switcher + Category Filter + Add Event CTA */}
+        <div className="calendar-actions-row">
+          {/* View Mode Segment Switcher */}
+          <div className="calendar-segment-control">
+            <button
+              onClick={() => setViewMode('day')}
+              className={`calendar-segment-btn ${viewMode === 'day' ? 'active' : ''}`}
+            >
+              <CalendarIcon size={14} /> <span>Ngày</span>
+            </button>
+            <button
+              onClick={() => setViewMode('week')}
+              className={`calendar-segment-btn ${viewMode === 'week' ? 'active' : ''}`}
+            >
+              <CalendarRange size={14} /> <span>Tuần</span>
+            </button>
+            <button
+              onClick={() => setViewMode('month')}
+              className={`calendar-segment-btn ${viewMode === 'month' ? 'active' : ''}`}
+            >
+              <LayoutGrid size={14} /> <span>Tháng</span>
+            </button>
+          </div>
+
           {/* Category Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Filter size={15} style={{ color: 'var(--text-muted)' }} />
+          <div className="calendar-filter-wrapper">
+            <Filter size={15} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="form-input"
-              style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.8rem', height: '36px' }}
+              className="form-input calendar-filter-select"
             >
               <option value="ALL">Tất cả danh mục</option>
               <option value="WORK">Công việc</option>
@@ -1141,76 +1459,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             </select>
           </div>
 
-          {/* View Mode Buttons */}
-          <div style={{
-            display: 'flex',
-            background: 'rgba(0, 0, 0, 0.35)',
-            borderRadius: '10px',
-            padding: '3px',
-            border: '1px solid var(--border-color)'
-          }}>
-            <button
-              onClick={() => setViewMode('day')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.4rem 0.85rem',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '0.825rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'day' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-                color: viewMode === 'day' ? '#fff' : 'var(--text-muted)'
-              }}
-            >
-              <CalendarIcon size={14} /> Ngày
-            </button>
-            <button
-              onClick={() => setViewMode('week')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.4rem 0.85rem',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '0.825rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'week' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-                color: viewMode === 'week' ? '#fff' : 'var(--text-muted)'
-              }}
-            >
-              <CalendarRange size={14} /> Tuần
-            </button>
-            <button
-              onClick={() => setViewMode('month')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.4rem 0.85rem',
-                borderRadius: '8px',
-                border: 'none',
-                fontSize: '0.825rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'month' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-                color: viewMode === 'month' ? '#fff' : 'var(--text-muted)'
-              }}
-            >
-              <LayoutGrid size={14} /> Tháng
-            </button>
-          </div>
-
+          {/* Add Button */}
           <button
             onClick={() => handleOpenCreateAtSlot(currentDate)}
-            className="btn btn-primary"
-            style={{ fontSize: '0.825rem', padding: '0.4rem 0.85rem' }}
+            className="btn btn-primary calendar-add-btn"
           >
-            <Plus size={15} /> Thêm Lịch
+            <Plus size={15} /> <span>Thêm Lịch</span>
           </button>
         </div>
       </div>

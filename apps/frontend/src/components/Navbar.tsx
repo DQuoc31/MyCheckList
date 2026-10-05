@@ -1,7 +1,6 @@
 import React from 'react';
-import { Plus, LogOut, User, LogIn } from 'lucide-react';
+import { Plus, LogOut, LogIn, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
 import { AppTab } from './Sidebar';
 
 interface NavbarProps {
@@ -12,32 +11,35 @@ interface NavbarProps {
   onOpenCreateHabit?: () => void;
   onOpenCreateTransaction?: () => void;
   onOpenAuthModal?: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
-  setActiveTab,
   onOpenCreateTask,
   onOpenCreateEvent,
   onOpenCreateHabit,
   onOpenCreateTransaction,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onToggleSidebar
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <header style={{
-      height: '64px',
-      borderBottom: '1px solid var(--border-color)',
-      background: 'rgba(17, 24, 39, 0.8)',
-      backdropFilter: 'blur(16px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 1.5rem',
-      zIndex: 10
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+    <header className="app-navbar">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        {/* Mobile Hamburger Toggle */}
+        {onToggleSidebar && (
+          <button 
+            className="btn-icon show-on-mobile"
+            onClick={onToggleSidebar}
+            aria-label="Mở menu"
+            style={{ padding: '0.5rem', marginRight: '0.2rem' }}
+          >
+            <Menu size={22} />
+          </button>
+        )}
+
         <div style={{
           width: '36px',
           height: '36px',
@@ -48,52 +50,57 @@ export const Navbar: React.FC<NavbarProps> = ({
           justifyContent: 'center',
           color: '#fff',
           fontWeight: 'bold',
-          boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)'
+          boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
+          flexShrink: 0
         }}>
           ✓
         </div>
         <div>
-          <h1 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
             CheckFlow
           </h1>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <p className="hide-on-mobile" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
             Hệ thống Lập lịch & Checklist
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
         {isAuthenticated && activeTab === 'checklist' && (
-          <button className="btn btn-primary" onClick={onOpenCreateTask}>
-            <Plus size={16} /> Thêm Task Mới
+          <button className="btn btn-primary btn-navbar-action" onClick={onOpenCreateTask}>
+            <Plus size={16} /> 
+            <span className="navbar-btn-text">Thêm Task</span>
           </button>
         )}
 
         {isAuthenticated && activeTab === 'calendar' && (
-          <button className="btn btn-primary" onClick={onOpenCreateEvent}>
-            <Plus size={16} /> Đặt Lịch Mới
+          <button className="btn btn-primary btn-navbar-action" onClick={onOpenCreateEvent}>
+            <Plus size={16} /> 
+            <span className="navbar-btn-text">Đặt Lịch</span>
           </button>
         )}
 
         {isAuthenticated && activeTab === 'habits' && (
-          <button className="btn btn-primary" onClick={onOpenCreateHabit}>
-            <Plus size={16} /> Thêm Thói Quen
+          <button className="btn btn-primary btn-navbar-action" onClick={onOpenCreateHabit}>
+            <Plus size={16} /> 
+            <span className="navbar-btn-text">Thêm Thói Quen</span>
           </button>
         )}
 
         {isAuthenticated && activeTab === 'finances' && (
-          <button className="btn btn-primary" onClick={onOpenCreateTransaction}>
-            <Plus size={16} /> Thêm Thu / Chi
+          <button className="btn btn-primary btn-navbar-action" onClick={onOpenCreateTransaction}>
+            <Plus size={16} /> 
+            <span className="navbar-btn-text">Thu / Chi</span>
           </button>
         )}
 
         {/* User Profile / Auth Actions */}
         {isAuthenticated && user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '0.5rem', borderLeft: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="navbar-user-section">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <div style={{
-                width: '34px',
-                height: '34px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
                 display: 'flex',
@@ -101,16 +108,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                 justifyContent: 'center',
                 color: '#fff',
                 fontWeight: 700,
-                fontSize: '0.85rem',
-                boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)'
+                fontSize: '0.8rem',
+                boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+                flexShrink: 0
               }}>
                 {user.name.charAt(0).toUpperCase()}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', lineHeight: 1.2 }}>
+              <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.825rem', fontWeight: 600, color: '#fff', lineHeight: 1.2 }}>
                   {user.name}
                 </span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   {user.email}
                 </span>
               </div>
@@ -119,25 +127,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={logout}
               title="Đăng xuất"
-              className="btn btn-secondary"
-              style={{
-                padding: '0.45rem 0.75rem',
-                fontSize: '0.8rem',
-                gap: '0.35rem',
-                color: 'var(--text-muted)'
-              }}
+              className="btn btn-secondary navbar-logout-btn"
             >
               <LogOut size={14} />
-              <span>Đăng xuất</span>
+              <span className="hide-on-mobile">Đăng xuất</span>
             </button>
           </div>
         ) : (
           <button
             onClick={onOpenAuthModal}
             className="btn btn-primary"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            style={{ padding: '0.45rem 0.85rem', fontSize: '0.825rem' }}
           >
-            <LogIn size={16} /> Đăng nhập
+            <LogIn size={15} /> <span>Đăng nhập</span>
           </button>
         )}
       </div>
