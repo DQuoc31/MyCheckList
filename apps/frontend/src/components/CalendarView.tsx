@@ -13,7 +13,8 @@ import {
   Filter, 
   X, 
   AlertTriangle,
-  Search
+  Search,
+  Repeat
 } from 'lucide-react';
 import { ScheduleAPI } from '../services/api';
 
@@ -70,6 +71,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [newStartTime, setNewStartTime] = useState('09:00');
   const [newEndTime, setNewEndTime] = useState('10:00');
   const [newCategory, setNewCategory] = useState<'WORK' | 'PERSONAL' | 'STUDY' | 'HEALTH' | 'MEETING'>('WORK');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<'WEEKLY' | 'DAILY' | 'MONTHLY'>('WEEKLY');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Helper for formatting local date YYYY-MM-DD
@@ -78,6 +81,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  };
+
+  const getWeekdayNameFromDateStr = (dateStr: string): string => {
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const dayNames = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+      return dayNames[dateObj.getDay()] || 'Thứ';
+    } catch {
+      return 'Thứ';
+    }
   };
 
   const extractLocalTime = (isoString: string): string => {
@@ -105,6 +119,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setNewTitle('');
     setNewDesc('');
     setNewCategory('WORK');
+    setIsRecurring(false);
+    setRecurrencePattern('WEEKLY');
 
     if (startHour !== undefined) {
       const sh = String(startHour).padStart(2, '0');
@@ -133,6 +149,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setNewStartTime(extractLocalTime(evt.startTime));
     setNewEndTime(extractLocalTime(evt.endTime));
     setNewCategory(evt.category || 'WORK');
+    setIsRecurring(Boolean(evt.isRecurring));
+    setRecurrencePattern(evt.recurrencePattern || 'WEEKLY');
     setIsLocalModalOpen(true);
   };
 
@@ -263,7 +281,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           startTime: startDate.toISOString(),
           endTime: endDate.toISOString(),
           category: newCategory,
-          color: getCategoryColor(newCategory)
+          color: getCategoryColor(newCategory),
+          isRecurring,
+          recurrencePattern: isRecurring ? recurrencePattern : undefined
         });
       } else {
         // Create new event
@@ -273,7 +293,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           startTime: startDate.toISOString(),
           endTime: endDate.toISOString(),
           category: newCategory,
-          color: getCategoryColor(newCategory)
+          color: getCategoryColor(newCategory),
+          isRecurring,
+          recurrencePattern: isRecurring ? recurrencePattern : undefined
         });
       }
 
@@ -328,6 +350,72 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   // -------------------------------------------------------------
+  // Resolve All Active & Recurring Events for a Target Day
+  // -------------------------------------------------------------
+  const resolveEventsForDay = (targetDay: Date, eventList: IScheduleEvent[]): IScheduleEvent[] => {
+    const results: IScheduleEvent[] = [];
+    const targetDayMidnight = new Date(targetDay.getFullYear(), targetDay.getMonth(), targetDay.getDate()).getTime();
+
+    eventList.forEach(evt => {
+      try {
+        const evtStart = new Date(evt.startTime);
+        const evtEnd = new Date(evt.endTime);
+        const evtStartMidnight = new Date(evtStart.getFullYear(), evtStart.getMonth(), evtStart.getDate()).getTime();
+
+        // 1. Non-recurring event: exact calendar date match
+        if (!evt.isRecurring) {
+          if (isSameDay(evtStart, targetDay)) {
+            results.push(evt);
+          }
+          return;
+        }
+
+        // 2. Recurring events: active only on or after the starting date
+        if (targetDayMidnight < evtStartMidnight) {
+          return;
+        }
+
+        const pattern = evt.recurrencePattern || 'WEEKLY';
+        let isMatch = false;
+
+        if (pattern === 'WEEKLY') {
+          // Matches same day of week (e.g. Every Monday)
+          isMatch = targetDay.getDay() === evtStart.getDay();
+        } else if (pattern === 'DAILY') {
+          // Matches every day
+          isMatch = true;
+        } else if (pattern === 'MONTHLY') {
+          // Matches same day of month
+          isMatch = targetDay.getDate() === evtStart.getDate();
+        }
+
+        if (isMatch) {
+          const durationMs = Math.max(15 * 60 * 1000, evtEnd.getTime() - evtStart.getTime());
+          const instanceStart = new Date(
+            targetDay.getFullYear(),
+            targetDay.getMonth(),
+            targetDay.getDate(),
+            evtStart.getHours(),
+            evtStart.getMinutes(),
+            evtStart.getSeconds()
+          );
+          const instanceEnd = new Date(instanceStart.getTime() + durationMs);
+
+          results.push({
+            ...evt,
+            startTime: instanceStart.toISOString(),
+            endTime: instanceEnd.toISOString()
+          });
+        }
+      } catch {
+        // Skip malformed dates
+      }
+    });
+
+    return results;
+  };
+
+  // -------------------------------------------------------------
   // Calculate Time-Proportional Layout for a Day's Events
   // -------------------------------------------------------------
   interface PositionedEvent {
@@ -342,13 +430,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }
 
   const computeDayPositionedEvents = (dayDate: Date): PositionedEvent[] => {
-    const dayEvts = filteredEvents.filter(evt => {
-      try {
-        return isSameDay(new Date(evt.startTime), dayDate);
-      } catch {
-        return false;
-      }
-    });
+    const dayEvts = resolveEventsForDay(dayDate, filteredEvents);
 
     if (dayEvts.length === 0) return [];
 
@@ -638,6 +720,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       }}>
                         {getCategoryLabel(evt.category)}
                       </span>
+                      {evt.isRecurring && (
+                        <span style={{
+                          fontSize: '0.62rem',
+                          padding: '1px 4px',
+                          borderRadius: '4px',
+                          background: 'rgba(167, 139, 250, 0.25)',
+                          color: '#c4b5fd',
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px',
+                          flexShrink: 0
+                        }} title={evt.recurrencePattern === 'DAILY' ? 'Lặp hằng ngày' : evt.recurrencePattern === 'MONTHLY' ? 'Lặp hằng tháng' : 'Lặp hằng tuần'}>
+                          <Repeat size={9} />
+                          {evt.recurrencePattern === 'DAILY' ? 'Ngày' : evt.recurrencePattern === 'MONTHLY' ? 'Tháng' : 'Tuần'}
+                        </span>
+                      )}
                       <span style={{
                         fontSize: '0.825rem',
                         fontWeight: 700,
@@ -739,13 +838,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     const today = new Date();
 
-    const selectedDayEvents = filteredEvents.filter(evt => {
-      try {
-        return isSameDay(new Date(evt.startTime), selectedWeekDay);
-      } catch {
-        return false;
-      }
-    });
+    const selectedDayEvents = resolveEventsForDay(selectedWeekDay, filteredEvents);
     selectedDayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     return (
@@ -758,13 +851,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {weekDays.map((day, idx) => {
                 const isToday = isSameDay(day, today);
                 const isSelected = isSameDay(day, selectedWeekDay);
-                const dayEvts = filteredEvents.filter(evt => {
-                  try {
-                    return isSameDay(new Date(evt.startTime), day);
-                  } catch {
-                    return false;
-                  }
-                });
+                const dayEvts = resolveEventsForDay(day, filteredEvents);
 
                 return (
                   <button
@@ -878,6 +965,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
                             {getCategoryLabel(evt.category)}
                           </span>
+                          {evt.isRecurring && (
+                            <span style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.25)', color: '#c4b5fd', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                              <Repeat size={9} /> {evt.recurrencePattern === 'DAILY' ? 'Ngày' : evt.recurrencePattern === 'MONTHLY' ? 'Tháng' : 'Tuần'}
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                             <Clock size={11} /> {formatTime(evt.startTime)} - {formatTime(evt.endTime)}
                           </span>
@@ -924,13 +1016,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             {weekDays.map((day, idx) => {
               const isToday = isSameDay(day, today);
               const isSelected = isSameDay(day, currentDate);
-              const dayEvents = filteredEvents.filter(evt => {
-                try {
-                  return isSameDay(new Date(evt.startTime), day);
-                } catch {
-                  return false;
-                }
-              });
+              const dayEvents = resolveEventsForDay(day, filteredEvents);
               dayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
               return (
@@ -1005,49 +1091,66 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             key={evtId}
                             onClick={(e) => handleOpenEditModal(evt, e)}
                             style={{
-                              padding: '0.6rem 0.7rem',
-                              borderRadius: '8px',
-                              background: `linear-gradient(135deg, ${color}33, rgba(15, 23, 42, 0.7))`,
-                              borderLeft: `3px solid ${color}`,
-                              borderTop: '1px solid rgba(255,255,255,0.08)',
-                              borderRight: '1px solid rgba(255,255,255,0.05)',
-                              borderBottom: '1px solid rgba(255,255,255,0.05)',
+                              padding: '0.45rem 0.55rem',
+                              borderRadius: '6px',
+                              background: `linear-gradient(135deg, ${color}22, rgba(15, 23, 42, 0.85))`,
+                              borderLeft: `3.5px solid ${color}`,
+                              borderTop: '1px solid rgba(255,255,255,0.06)',
+                              borderRight: '1px solid rgba(255,255,255,0.04)',
+                              borderBottom: '1px solid rgba(255,255,255,0.04)',
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '0.25rem',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                              cursor: 'pointer'
+                              gap: '0.2rem',
+                              boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
+                              cursor: 'pointer',
+                              position: 'relative',
+                              overflow: 'hidden'
                             }}
                             className="schedule-week-event-card"
-                            title="Nhấn để chỉnh sửa"
+                            title={`${evt.title} (${formatTime(evt.startTime)} - ${formatTime(evt.endTime)}) - Nhấn để sửa`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
-                                {getCategoryLabel(evt.category)}
-                              </span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={e => e.stopPropagation()}>
+                            {/* Top row: Time + Recurring icon & Hover Actions */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '3px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                <Clock size={10} style={{ color, flexShrink: 0 }} />
+                                <span>{formatTime(evt.startTime)} - {formatTime(evt.endTime)}</span>
+                                {evt.isRecurring && (
+                                  <span title="Lặp lại tự động" style={{ display: 'inline-flex' }}>
+                                    <Repeat size={9} style={{ color: '#a78bfa', flexShrink: 0 }} />
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Hover actions */}
+                              <div className="week-card-actions" style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={e => e.stopPropagation()}>
                                 <button
                                   onClick={(e) => handleOpenEditModal(evt, e)}
-                                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '2px' }}
+                                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: '1px' }}
                                   title="Sửa"
                                 >
-                                  <Edit3 size={12} />
+                                  <Edit3 size={11} />
                                 </button>
                                 <button
                                   onClick={(e) => promptDeleteEvent(evt, e)}
-                                  style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px' }}
+                                  style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '1px' }}
                                   title="Xóa"
                                 >
-                                  <Trash2 size={12} />
+                                  <Trash2 size={11} />
                                 </button>
                               </div>
                             </div>
-                            <div style={{ fontSize: '0.825rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+
+                            {/* Title */}
+                            <div style={{
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              color: '#fff',
+                              lineHeight: 1.3,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
                               {evt.title}
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <Clock size={10} style={{ color }} />
-                              <span>{formatTime(evt.startTime)} - {formatTime(evt.endTime)}</span>
                             </div>
                           </div>
                         );
@@ -1086,13 +1189,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     const today = new Date();
 
-    const selectedDayEvents = filteredEvents.filter(evt => {
-      try {
-        return isSameDay(new Date(evt.startTime), selectedMonthDay);
-      } catch {
-        return false;
-      }
-    });
+    const selectedDayEvents = resolveEventsForDay(selectedMonthDay, filteredEvents);
     selectedDayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     return (
@@ -1114,13 +1211,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               const isCurrentMonth = day.getMonth() === month;
               const isToday = isSameDay(day, today);
               const isSelected = isSameDay(day, selectedMonthDay);
-              const dayEvents = filteredEvents.filter(evt => {
-                try {
-                  return isSameDay(new Date(evt.startTime), day);
-                } catch {
-                  return false;
-                }
-              });
+              const dayEvents = resolveEventsForDay(day, filteredEvents);
 
               return (
                 <div
@@ -1201,11 +1292,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '2px'
                           }}
                           title={`${formatTime(evt.startTime)} - ${evt.title}`}
                         >
-                          {formatTime(evt.startTime)} {evt.title}
+                          {evt.isRecurring && <Repeat size={8} style={{ color: '#c4b5fd', flexShrink: 0 }} />}
+                          <span>{formatTime(evt.startTime)} {evt.title}</span>
                         </div>
                       );
                     })}
@@ -1297,6 +1392,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: color, color: '#fff', fontWeight: 700 }}>
                           {getCategoryLabel(evt.category)}
                         </span>
+                        {evt.isRecurring && (
+                          <span style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.25)', color: '#c4b5fd', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                            <Repeat size={9} /> {evt.recurrencePattern === 'DAILY' ? 'Ngày' : evt.recurrencePattern === 'MONTHLY' ? 'Tháng' : 'Tuần'}
+                          </span>
+                        )}
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                           <Clock size={11} /> {formatTime(evt.startTime)} - {formatTime(evt.endTime)}
                         </span>
@@ -1350,9 +1450,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5) !important;
           border-color: rgba(255, 255, 255, 0.25) !important;
         }
+        .schedule-week-event-card {
+          transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .schedule-week-event-card .week-card-actions {
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
         .schedule-week-event-card:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+          border-color: rgba(255, 255, 255, 0.25) !important;
+        }
+        .schedule-week-event-card:hover .week-card-actions {
+          opacity: 1;
         }
         .calendar-week-col:hover {
           background: rgba(99, 102, 241, 0.06) !important;
@@ -1686,6 +1797,142 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Recurring Schedule Option */}
+              <div style={{
+                background: isRecurring ? 'rgba(139, 92, 246, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                border: isRecurring ? '1px solid rgba(139, 92, 246, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '10px',
+                padding: '0.75rem 0.85rem',
+                transition: 'all 0.2s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: isRecurring ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3))' : 'rgba(255, 255, 255, 0.05)',
+                      border: `1px solid ${isRecurring ? 'rgba(139, 92, 246, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: isRecurring ? '#a78bfa' : 'var(--text-muted)',
+                      flexShrink: 0
+                    }}>
+                      <Repeat size={16} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>
+                        Lặp lại lịch trình tự động
+                      </div>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+                        {isRecurring 
+                          ? (recurrencePattern === 'WEEKLY' 
+                              ? `Tự động lặp vào mỗi ${getWeekdayNameFromDateStr(newDate)} hằng tuần`
+                              : recurrencePattern === 'DAILY'
+                                ? 'Tự động lặp vào tất cả các ngày'
+                                : `Tự động lặp vào ngày ${newDate.split('-')[2] || ''} hằng tháng`)
+                          : 'Sự kiện diễn ra duy nhất vào ngày đã chọn'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <label style={{ position: 'relative', display: 'inline-block', width: '42px', height: '24px', cursor: 'pointer', flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={isRecurring}
+                      onChange={e => setIsRecurring(e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute',
+                      top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: isRecurring ? '#8b5cf6' : 'rgba(255, 255, 255, 0.15)',
+                      transition: 'all .25s ease',
+                      borderRadius: '24px',
+                      boxShadow: isRecurring ? '0 0 10px rgba(139, 92, 246, 0.5)' : 'none'
+                    }}>
+                      <span style={{
+                        position: 'absolute',
+                        height: '18px',
+                        width: '18px',
+                        left: isRecurring ? '21px' : '3px',
+                        bottom: '3px',
+                        backgroundColor: '#fff',
+                        transition: 'all .25s ease',
+                        borderRadius: '50%',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.4)'
+                      }} />
+                    </span>
+                  </label>
+                </div>
+
+                {isRecurring && (
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <label style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                      Chu kỳ lặp lại
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setRecurrencePattern('WEEKLY')}
+                        style={{
+                          padding: '0.45rem 0.35rem',
+                          borderRadius: '6px',
+                          border: recurrencePattern === 'WEEKLY' ? '1.5px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
+                          background: recurrencePattern === 'WEEKLY' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
+                          color: recurrencePattern === 'WEEKLY' ? '#fff' : 'var(--text-muted)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        📅 Hằng tuần ({getWeekdayNameFromDateStr(newDate)})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRecurrencePattern('DAILY')}
+                        style={{
+                          padding: '0.45rem 0.35rem',
+                          borderRadius: '6px',
+                          border: recurrencePattern === 'DAILY' ? '1.5px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
+                          background: recurrencePattern === 'DAILY' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
+                          color: recurrencePattern === 'DAILY' ? '#fff' : 'var(--text-muted)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        🔁 Hằng ngày
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRecurrencePattern('MONTHLY')}
+                        style={{
+                          padding: '0.45rem 0.35rem',
+                          borderRadius: '6px',
+                          border: recurrencePattern === 'MONTHLY' ? '1.5px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
+                          background: recurrencePattern === 'MONTHLY' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
+                          color: recurrencePattern === 'MONTHLY' ? '#fff' : 'var(--text-muted)',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        📆 Hằng tháng
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Footer Buttons */}

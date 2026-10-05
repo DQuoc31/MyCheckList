@@ -21,9 +21,16 @@ import {
   Target,
   Edit3,
   AlertTriangle,
-  X
+  X,
+  LayoutGrid,
+  Calendar,
+  ChevronUp,
+  ChevronDown,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import { HabitAPI } from '../services/api';
+import { HabitContributionHeatmap } from './HabitContributionHeatmap';
 
 interface HabitsViewProps {
   habits: IHabitTracker[];
@@ -127,6 +134,30 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
   const [color, setColor] = useState('#6366f1');
   const [quickOptionsInput, setQuickOptionsInput] = useState('1, 2');
   const [submitting, setSubmitting] = useState(false);
+
+  // Collapse / Shrink Habit Cards & Labels State
+  const [collapsedHabitIds, setCollapsedHabitIds] = useState<Set<string>>(new Set());
+  const [isCompactLabels, setIsCompactLabels] = useState<boolean>(false);
+
+  const toggleHabitCollapse = (id: string) => {
+    setCollapsedHabitIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllCollapse = () => {
+    if (collapsedHabitIds.size === habits.length && habits.length > 0) {
+      setCollapsedHabitIds(new Set());
+    } else {
+      setCollapsedHabitIds(new Set(habits.map(h => (h.id || h._id || '') as string)));
+    }
+  };
 
   // Custom Log Modal States (Popup replacing window.prompt)
   const [customLogHabit, setCustomLogHabit] = useState<IHabitTracker | null>(null);
@@ -246,6 +277,14 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
     const day = String(selectedDate.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }, [selectedDate]);
+
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
 
   const isToday = useMemo(() => {
     const today = new Date();
@@ -429,8 +468,49 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
           </p>
         </div>
 
-        {/* Date Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Toolbar Controls: Compact Label Toggle & Date Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          
+          {/* Global View & Label Size Toggles */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <button
+              type="button"
+              onClick={() => setIsCompactLabels(!isCompactLabels)}
+              className="btn btn-secondary"
+              style={{
+                padding: '0.4rem 0.65rem',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                background: isCompactLabels ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                borderColor: isCompactLabels ? 'rgba(99, 102, 241, 0.4)' : 'var(--border-color)',
+                color: isCompactLabels ? '#818cf8' : 'var(--text-muted)'
+              }}
+              title="Chuyển đổi kích thước nhãn tiêu đề thói quen"
+            >
+              {isCompactLabels ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              <span>{isCompactLabels ? 'Nhãn thu nhỏ' : 'Nhãn tiêu chuẩn'}</span>
+            </button>
+
+            {habits.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleAllCollapse}
+                className="btn btn-secondary"
+                style={{
+                  padding: '0.4rem 0.65rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)'
+                }}
+                title="Thu gọn hoặc mở rộng toàn bộ bảng tổng kết"
+              >
+                {collapsedHabitIds.size === habits.length ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                <span>{collapsedHabitIds.size === habits.length ? 'Mở rộng tất cả' : 'Thu gọn tất cả'}</span>
+              </button>
+            )}
+          </div>
+
+          {/* Date Selector */}
           <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', padding: '2px', border: '1px solid var(--border-color)' }}>
             <button onClick={handlePrevDay} className="btn-icon" title="Ngày hôm trước" style={{ padding: '0.4rem' }}>
               <ChevronLeft size={18} />
@@ -541,7 +621,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
         </div>
       </div>
 
-      {/* Habits Cards Grid */}
+      {/* Habits Cards List */}
       {habits.length === 0 ? (
         <div className="glass-card" style={{
           textAlign: 'center',
@@ -571,62 +651,78 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: isCompactLabels ? '1rem' : '1.5rem' }}>
           {habits.map(habit => {
-            const habitId = habit.id || habit._id || '';
+            const habitId = (habit.id || habit._id || '') as string;
             const currentValue = getHabitValueForDate(habit, selectedDateStr);
             const percent = Math.min(100, Math.round((currentValue / habit.dailyTarget) * 100));
             const isCompleted = currentValue >= habit.dailyTarget;
             const streak = calculateStreak(habit);
             const IconComponent = HABIT_ICONS[habit.icon || 'sparkles'] || Sparkles;
             const habitColor = habit.color || '#6366f1';
+            const isCollapsed = collapsedHabitIds.has(habitId);
 
             return (
               <div
                 key={habitId}
                 className="glass-card"
                 style={{
-                  padding: '1.5rem',
+                  padding: isCollapsed 
+                    ? (isCompactLabels ? '0.75rem 1rem' : '1rem 1.25rem') 
+                    : (isCompactLabels ? '1rem 1.25rem' : '1.5rem'),
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '1.25rem',
+                  gap: isCollapsed ? '0' : (isCompactLabels ? '0.85rem' : '1.25rem'),
                   position: 'relative',
                   border: isCompleted 
-                    ? `1px solid ${habitColor}66` 
+                    ? `1px solid ${habitColor}55` 
                     : '1px solid var(--border-color)',
                   boxShadow: isCompleted 
-                    ? `0 8px 30px ${habitColor}22` 
-                    : 'none'
+                    ? `0 8px 30px ${habitColor}18` 
+                    : '0 4px 20px rgba(0, 0, 0, 0.2)',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {/* Habit Controls Top Header */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: isCompactLabels ? '0.75rem' : '1.25rem',
+                  paddingBottom: isCollapsed ? '0' : (isCompactLabels ? '0.75rem' : '1rem'),
+                  borderBottom: isCollapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.07)'
+                }}>
+                  {/* Habit Info & Icon with Compact Label Support */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: isCompactLabels ? '0.6rem' : '0.85rem', minWidth: '200px' }}>
                     <div style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: '12px',
+                      width: isCompactLabels ? '36px' : '46px',
+                      height: isCompactLabels ? '36px' : '46px',
+                      borderRadius: isCompactLabels ? '10px' : '14px',
                       background: `linear-gradient(135deg, ${habitColor}33, ${habitColor}11)`,
                       border: `1px solid ${habitColor}44`,
                       color: habitColor,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: `0 0 15px ${habitColor}22`
+                      boxShadow: `0 0 15px ${habitColor}22`,
+                      flexShrink: 0
                     }}>
-                      <IconComponent size={22} color={habitColor} />
+                      <IconComponent size={isCompactLabels ? 18 : 24} color={habitColor} />
                     </div>
                     <div>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
-                        {habit.title}
-                      </h4>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          Mục tiêu: <strong style={{ color: '#fff' }}>{habit.dailyTarget} {habit.unit}</strong>/ngày
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <h4 style={{
+                          fontSize: isCompactLabels ? '0.98rem' : '1.15rem',
+                          fontWeight: 800,
+                          color: '#fff',
+                          lineHeight: 1.2
+                        }}>
+                          {habit.title}
+                        </h4>
                         {streak > 0 && (
                           <span style={{
-                            fontSize: '0.7rem',
+                            fontSize: isCompactLabels ? '0.65rem' : '0.72rem',
                             fontWeight: 700,
                             padding: '1px 6px',
                             borderRadius: '9999px',
@@ -637,104 +733,127 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                             alignItems: 'center',
                             gap: '2px'
                           }}>
-                            <Flame size={11} /> {streak} ngày
+                            <Flame size={isCompactLabels ? 10 : 12} /> {streak} ngày
                           </span>
                         )}
+                      </div>
+                      <div style={{ fontSize: isCompactLabels ? '0.72rem' : '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                        Mục tiêu: <strong style={{ color: '#fff' }}>{habit.dailyTarget} {habit.unit}</strong>/ngày
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <button
-                      onClick={() => openEditModal(habit)}
-                      title="Chỉnh sửa mục tiêu & thói quen"
-                      className="btn-icon"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      <Edit3 size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleResetDay(habit)}
-                      title="Đặt lại về 0"
-                      className="btn-icon"
-                      style={{ color: 'var(--text-dim)' }}
-                    >
-                      <RotateCcw size={15} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteHabit(habit)}
-                      title="Xóa thói quen"
-                      className="btn-icon"
-                      style={{ color: 'var(--accent-danger)' }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Progress Info */}
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.4rem' }}>
-                    <div style={{ fontSize: '1.35rem', fontWeight: 800, color: isCompleted ? habitColor : '#fff' }}>
-                      {currentValue}{' '}
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                        / {habit.dailyTarget} {habit.unit}
-                      </span>
+                  {/* Selected Day's Progress Indicator */}
+                  <div style={{ flex: '1 1 200px', maxWidth: '320px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
+                      <div style={{ fontSize: isCompactLabels ? '0.74rem' : '0.8rem', color: 'var(--text-muted)' }}>
+                        {selectedDateStr === todayStr ? 'Hôm nay' : selectedDateStr}:
+                      </div>
+                      <div style={{ fontSize: isCompactLabels ? '0.78rem' : '0.85rem', fontWeight: 700, color: isCompleted ? '#10b981' : habitColor }}>
+                        {currentValue} / {habit.dailyTarget} {habit.unit} ({percent}%)
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 700, color: isCompleted ? '#10b981' : 'var(--text-muted)' }}>
-                      {isCompleted ? '✓ Đã đạt' : `${percent}%`}
+                    <div className="progress-container" style={{ height: isCompactLabels ? '5px' : '7px', background: 'rgba(255, 255, 255, 0.06)' }}>
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${percent}%`,
+                          background: isCompleted ? `linear-gradient(90deg, ${habitColor}, #10b981)` : habitColor,
+                          boxShadow: `0 0 10px ${habitColor}66`
+                        }}
+                      />
                     </div>
                   </div>
 
-                  {/* Glowing Progress bar */}
-                  <div className="progress-container" style={{ height: '8px', background: 'rgba(255, 255, 255, 0.06)' }}>
-                    <div
-                      className="progress-fill"
-                      style={{
-                        width: `${percent}%`,
-                        background: isCompleted 
-                          ? `linear-gradient(90deg, ${habitColor}, #10b981)` 
-                          : habitColor,
-                        boxShadow: `0 0 10px ${habitColor}66`
-                      }}
-                    />
-                  </div>
-                </div>
+                  {/* Quick Add & Management Buttons */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                    {(habit.quickOptions || [1, 5]).map((optionVal, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleQuickLog(habitId, optionVal)}
+                        className="btn btn-secondary"
+                        style={{
+                          padding: isCompactLabels ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
+                          fontSize: isCompactLabels ? '0.74rem' : '0.8rem',
+                          fontWeight: 600,
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          borderColor: 'rgba(255, 255, 255, 0.1)'
+                        }}
+                      >
+                        +{optionVal} {habit.unit}
+                      </button>
+                    ))}
 
-                {/* Quick Add Buttons */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-                  {(habit.quickOptions || [1, 5]).map((optionVal, idx) => (
                     <button
-                      key={idx}
-                      onClick={() => handleQuickLog(habitId, optionVal)}
+                      onClick={() => openCustomLogModal(habit)}
                       className="btn btn-secondary"
                       style={{
-                        padding: '0.45rem 0.85rem',
-                        fontSize: '0.825rem',
+                        padding: isCompactLabels ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
+                        fontSize: isCompactLabels ? '0.74rem' : '0.8rem',
                         fontWeight: 600,
-                        flex: 1,
-                        background: 'rgba(255, 255, 255, 0.04)',
-                        borderColor: 'rgba(255, 255, 255, 0.08)'
+                        color: 'var(--text-muted)'
                       }}
+                      title="Nhập số lượng tùy ý"
                     >
-                      +{optionVal} {habit.unit}
+                      Tùy chỉnh...
                     </button>
-                  ))}
 
-                  <button
-                    onClick={() => openCustomLogModal(habit)}
-                    className="btn btn-secondary"
-                    style={{
-                      padding: '0.45rem 0.75rem',
-                      fontSize: '0.825rem',
-                      fontWeight: 600,
-                      color: 'var(--text-muted)'
-                    }}
-                    title="Nhập số lượng tùy ý"
-                  >
-                    Tùy chỉnh...
-                  </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', marginLeft: '0.25rem', borderLeft: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '0.45rem' }}>
+                      <button
+                        onClick={() => openEditModal(habit)}
+                        title="Chỉnh sửa mục tiêu & thói quen"
+                        className="btn-icon"
+                        style={{ color: 'var(--text-muted)', padding: '0.35rem' }}
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleResetDay(habit)}
+                        title="Đặt lại ngày này về 0"
+                        className="btn-icon"
+                        style={{ color: 'var(--text-dim)', padding: '0.35rem' }}
+                      >
+                        <RotateCcw size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteHabit(habit)}
+                        title="Xóa thói quen"
+                        className="btn-icon"
+                        style={{ color: 'var(--accent-danger)', padding: '0.35rem' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+
+                      {/* Per-habit Collapse / Expand Toggle Button */}
+                      <button
+                        onClick={() => toggleHabitCollapse(habitId)}
+                        title={isCollapsed ? 'Mở rộng bảng tổng kết 1 năm' : 'Thu nhỏ bảng tổng kết'}
+                        className="btn-icon"
+                        style={{
+                          color: isCollapsed ? 'var(--accent-primary)' : 'var(--text-muted)',
+                          padding: '0.35rem',
+                          background: isCollapsed ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                          borderRadius: '6px'
+                        }}
+                      >
+                        {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Individual Contribution Summary Table / Heatmap for this Habit */}
+                {!isCollapsed && (
+                  <HabitContributionHeatmap
+                    habit={habit}
+                    selectedDate={selectedDateStr}
+                    onSelectDate={(dateStr) => {
+                      const [y, m, d] = dateStr.split('-').map(Number);
+                      setSelectedDate(new Date(y, m - 1, d));
+                    }}
+                    defaultColorTheme="github"
+                  />
+                )}
               </div>
             );
           })}
