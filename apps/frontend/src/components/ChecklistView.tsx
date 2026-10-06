@@ -97,6 +97,35 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     }
   };
 
+  const getDeadlineUrgency = (task: ITask): 'OVERDUE' | 'DUE_SOON' | 'NORMAL' | 'NONE' => {
+    if (!task.dueDate || task.status === 'COMPLETED') return 'NONE';
+    try {
+      const dueTime = new Date(task.dueDate).getTime();
+      const diffMs = dueTime - Date.now();
+      if (diffMs < 0) return 'OVERDUE';
+      if (diffMs <= 24 * 60 * 60 * 1000) return 'DUE_SOON'; // Dưới 1 ngày (24 giờ)
+      return 'NORMAL';
+    } catch {
+      return 'NONE';
+    }
+  };
+
+  const formatRemainingTime = (dueDate: string): string => {
+    try {
+      const diffMs = new Date(dueDate).getTime() - Date.now();
+      if (diffMs <= 0) return 'Đã quá hạn';
+      const totalMinutes = Math.floor(diffMs / 60000);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours === 0) return `Còn ${minutes} phút`;
+      if (hours < 24) return `Còn ${hours}h ${minutes}p`;
+      const days = Math.floor(hours / 24);
+      return `Còn ${days} ngày`;
+    } catch {
+      return '';
+    }
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedTaskIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -415,6 +444,8 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
             const progressPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : (isCompleted ? 100 : 0);
             const isExpanded = expandedTaskIds[taskId] ?? true;
             const isOverdue = isTaskOverdue(task);
+            const urgency = getDeadlineUrgency(task);
+            const isDueSoon = urgency === 'DUE_SOON';
             const effStatus = effectiveStatus(task);
 
             return (
@@ -424,7 +455,30 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 style={{ 
                   padding: '1.25rem', 
                   position: 'relative',
-                  borderLeft: `4px solid ${isOverdue ? '#ef4444' : getStatusColor(task.status)}`,
+                  borderLeft: isCompleted 
+                    ? '4px solid #10b981' 
+                    : isOverdue 
+                      ? '4px solid #ef4444' 
+                      : isDueSoon 
+                        ? '4px solid #f59e0b' 
+                        : `4px solid ${getStatusColor(task.status)}`,
+                  background: isCompleted
+                    ? undefined
+                    : isOverdue
+                      ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(15, 23, 42, 0.95))'
+                      : isDueSoon
+                        ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(15, 23, 42, 0.95))'
+                        : undefined,
+                  border: isDueSoon
+                    ? '1px solid rgba(245, 158, 11, 0.35)'
+                    : isOverdue
+                      ? '1px solid rgba(239, 68, 68, 0.3)'
+                      : undefined,
+                  boxShadow: isDueSoon
+                    ? '0 4px 20px rgba(245, 158, 11, 0.18)'
+                    : isOverdue
+                      ? '0 4px 18px rgba(239, 68, 68, 0.15)'
+                      : undefined,
                   opacity: isCompleted ? 0.85 : (isOverdue ? 0.9 : 1),
                   transition: 'all 0.2s ease'
                 }}
@@ -440,7 +494,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                       style={{ 
                         padding: '2px', 
                         marginTop: '2px', 
-                        color: isCompleted ? 'var(--accent-success)' : 'var(--text-dim)',
+                        color: isCompleted ? 'var(--accent-success)' : isDueSoon ? '#f59e0b' : 'var(--text-dim)',
                         flexShrink: 0
                       }}
                       title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
@@ -464,9 +518,21 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                               fontSize: '0.75rem',
                               fontWeight: 700,
                               cursor: 'pointer',
-                              border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : getStatusBorder(task.status),
-                              background: isOverdue ? 'rgba(239, 68, 68, 0.15)' : getStatusBg(task.status),
-                              color: isOverdue ? '#f87171' : getStatusColor(task.status),
+                              border: isOverdue 
+                                ? '1px solid rgba(239, 68, 68, 0.4)' 
+                                : isDueSoon 
+                                  ? '1px solid rgba(245, 158, 11, 0.45)' 
+                                  : getStatusBorder(task.status),
+                              background: isOverdue 
+                                ? 'rgba(239, 68, 68, 0.15)' 
+                                : isDueSoon 
+                                  ? 'rgba(245, 158, 11, 0.18)' 
+                                  : getStatusBg(task.status),
+                              color: isOverdue 
+                                ? '#f87171' 
+                                : isDueSoon 
+                                  ? '#fbbf24' 
+                                  : getStatusColor(task.status),
                               outline: 'none',
                               appearance: 'none',
                               WebkitAppearance: 'none',
@@ -485,7 +551,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                               position: 'absolute', 
                               right: '6px', 
                               pointerEvents: 'none', 
-                              color: isOverdue ? '#f87171' : getStatusColor(task.status) 
+                              color: isOverdue ? '#f87171' : isDueSoon ? '#fbbf24' : getStatusColor(task.status) 
                             }} 
                           />
                         </div>
@@ -507,12 +573,31 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                             <AlertTriangle size={11} /> Đã quá hạn
                           </span>
                         )}
+
+                        {/* Due Soon Warning Badge (< 24h) */}
+                        {isDueSoon && (
+                          <span style={{
+                            fontSize: '0.68rem',
+                            padding: '1px 7px',
+                            borderRadius: '4px',
+                            background: 'rgba(245, 158, 11, 0.22)',
+                            color: '#fbbf24',
+                            border: '1px solid rgba(245, 158, 11, 0.5)',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}>
+                            <Clock size={11} style={{ color: '#f59e0b' }} />
+                            <span>Hạn chót &lt; 24h ({formatRemainingTime(task.dueDate!)})</span>
+                          </span>
+                        )}
                       </div>
 
                       <h3 style={{ 
                         fontSize: '1.1rem', 
                         fontWeight: 600, 
-                        color: isCompleted ? 'rgba(255, 255, 255, 0.65)' : '#fff', 
+                        color: isCompleted ? 'rgba(255, 255, 255, 0.65)' : (isDueSoon ? '#fff' : '#fff'), 
                         textDecoration: isCompleted ? 'line-through' : 'none',
                         wordBreak: 'break-word',
                         marginBottom: task.description ? '0.35rem' : '0.5rem'
@@ -539,16 +624,31 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '0.3rem',
-                            padding: '2px 7px',
+                            padding: '2px 8px',
                             borderRadius: '4px',
                             fontSize: '0.72rem',
-                            fontWeight: 600,
-                            background: isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                            color: isOverdue ? '#f87171' : 'var(--text-muted)',
-                            border: isOverdue ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)'
+                            fontWeight: isDueSoon || isOverdue ? 700 : 600,
+                            background: isOverdue 
+                              ? 'rgba(239, 68, 68, 0.15)' 
+                              : isDueSoon 
+                                ? 'rgba(245, 158, 11, 0.22)' 
+                                : 'rgba(255, 255, 255, 0.05)',
+                            color: isOverdue 
+                              ? '#f87171' 
+                              : isDueSoon 
+                                ? '#fbbf24' 
+                                : 'var(--text-muted)',
+                            border: isOverdue 
+                              ? '1px solid rgba(239, 68, 68, 0.35)' 
+                              : isDueSoon 
+                                ? '1px solid rgba(245, 158, 11, 0.45)' 
+                                : '1px solid rgba(255, 255, 255, 0.08)'
                           }}>
-                            <Calendar size={12} style={{ color: isOverdue ? '#ef4444' : '#818cf8' }} />
-                            <span>{isOverdue ? 'Hạn chót (Đã quá): ' : 'Hạn chót: '}{formatDisplayDateTime(task.dueDate)}</span>
+                            <Calendar size={12} style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#818cf8' }} />
+                            <span>
+                              {isOverdue ? 'Hạn chót (Đã quá): ' : isDueSoon ? 'Hạn chót (Gấp): ' : 'Hạn chót: '}
+                              {formatDisplayDateTime(task.dueDate)}
+                            </span>
                           </span>
                         )}
 

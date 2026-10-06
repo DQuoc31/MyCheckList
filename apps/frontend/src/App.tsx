@@ -146,6 +146,7 @@ const MainApp: React.FC = () => {
           {activeTab === 'calendar' && (
             <CalendarView
               events={events}
+              tasks={tasks}
               onRefresh={loadAllData}
               showCreateModal={showCreateEventModal}
               onCloseCreateModal={() => setShowCreateEventModal(false)}
