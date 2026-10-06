@@ -1,6 +1,23 @@
 import React, { useState } from 'react';
 import { ITask, Priority, TaskStatus } from '@mychecklist/shared';
-import { CheckSquare, Square, Trash2, Plus, Clock, Tag, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { 
+  CheckSquare, 
+  Square, 
+  Trash2, 
+  Plus, 
+  Clock, 
+  Tag, 
+  ChevronDown, 
+  ChevronUp, 
+  AlertCircle,
+  Edit3,
+  X,
+  AlertTriangle,
+  CheckCircle2,
+  PlayCircle,
+  Archive,
+  ListTodo
+} from 'lucide-react';
 import { TaskAPI } from '../services/api';
 
 interface ChecklistViewProps {
@@ -19,19 +36,81 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>({});
 
-  // New task form state
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [newPriority, setNewPriority] = useState<Priority>('MEDIUM');
-  const [newTags, setNewTags] = useState('');
-  const [newSubItems, setNewSubItems] = useState<string[]>(['']);
+  // Modal states
+  const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<ITask | null>(null);
+  const isModalVisible = showCreateModal || isLocalModalOpen;
+
+  // Custom Delete Confirm Popup State
+  const [deleteTargetTask, setDeleteTargetTask] = useState<ITask | null>(null);
+
+  // Form states
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDesc, setTaskDesc] = useState('');
+  const [taskPriority, setTaskPriority] = useState<Priority>('MEDIUM');
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>('TODO');
+  const [taskTags, setTaskTags] = useState('');
+  const [taskSubItems, setTaskSubItems] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleExpand = (id: string) => {
     setExpandedTaskIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleToggleSubTask = async (taskId: string, subId: string) => {
+  const handleCloseModal = () => {
+    setIsLocalModalOpen(false);
+    setEditingTask(null);
+    onCloseCreateModal();
+  };
+
+  const handleOpenEditModal = (task: ITask, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingTask(task);
+    setTaskTitle(task.title || '');
+    setTaskDesc(task.description || '');
+    setTaskPriority(task.priority || 'MEDIUM');
+    setTaskStatus(task.status || 'TODO');
+    setTaskTags((task.tags || []).join(', '));
+    const subs = (task.checklist || []).map(c => c.title);
+    setTaskSubItems(subs.length > 0 ? subs : ['']);
+    setIsLocalModalOpen(true);
+  };
+
+  const handleOpenCreateModal = () => {
+    setEditingTask(null);
+    setTaskTitle('');
+    setTaskDesc('');
+    setTaskPriority('MEDIUM');
+    setTaskStatus('TODO');
+    setTaskTags('');
+    setTaskSubItems(['']);
+    setIsLocalModalOpen(true);
+  };
+
+  // Quick Task Status update
+  const handleUpdateStatus = async (taskId: string, newStatus: TaskStatus, e?: React.MouseEvent | React.ChangeEvent<HTMLSelectElement>) => {
+    if (e && 'stopPropagation' in e) e.stopPropagation();
+    try {
+      await TaskAPI.update(taskId, { status: newStatus });
+      onRefresh();
+    } catch (err: any) {
+      console.error('Failed to update task status:', err);
+      alert(`Lỗi cập nhật trạng thái: ${err.message}`);
+    }
+  };
+
+  // Quick toggle main task complete
+  const handleToggleMainTaskComplete = async (task: ITask, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const taskId = task.id || task._id;
+    if (!taskId) return;
+    const newStatus: TaskStatus = task.status === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+    await handleUpdateStatus(taskId, newStatus);
+  };
+
+  // Toggle sub-task
+  const handleToggleSubTask = async (taskId: string, subId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       await TaskAPI.toggleSubTask(taskId, subId);
       onRefresh();
@@ -40,58 +119,98 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa task này?')) return;
+  // Prompt delete modal
+  const promptDeleteTask = (task: ITask, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDeleteTargetTask(task);
+  };
+
+  // Confirm delete
+  const confirmDeleteTask = async () => {
+    if (!deleteTargetTask) return;
+    const taskId = deleteTargetTask.id || deleteTargetTask._id;
+    if (!taskId) return;
+
     try {
       await TaskAPI.delete(taskId);
+      if (editingTask && (editingTask.id === taskId || editingTask._id === taskId)) {
+        handleCloseModal();
+      }
+      setDeleteTargetTask(null);
       onRefresh();
     } catch (err: any) {
-      console.error('Failed to delete task:', err);
+      alert(`Lỗi xóa task: ${err.message}`);
     }
   };
 
   const handleAddSubItemInput = () => {
-    setNewSubItems(prev => [...prev, '']);
+    setTaskSubItems(prev => [...prev, '']);
+  };
+
+  const handleRemoveSubItemInput = (index: number) => {
+    setTaskSubItems(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubItemChange = (index: number, val: string) => {
-    const updated = [...newSubItems];
+    const updated = [...taskSubItems];
     updated[index] = val;
-    setNewSubItems(updated);
+    setTaskSubItems(updated);
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!taskTitle.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const checklist = newSubItems
+      const checklist = taskSubItems
         .filter(item => item.trim().length > 0)
         .map(title => ({ title, completed: false }));
 
-      const tags = newTags
+      const tags = taskTags
         .split(',')
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
-      await TaskAPI.create({
-        title: newTitle.trim(),
-        description: newDesc.trim(),
-        priority: newPriority,
-        tags,
-        checklist
-      });
+      if (editingTask) {
+        const taskId = editingTask.id || editingTask._id;
+        if (!taskId) throw new Error('Không tìm thấy ID task');
 
-      setNewTitle('');
-      setNewDesc('');
-      setNewPriority('MEDIUM');
-      setNewTags('');
-      setNewSubItems(['']);
-      onCloseCreateModal();
+        // Preserve existing subtask completion states if titles match
+        const existingChecklist = editingTask.checklist || [];
+        const mergedChecklist = taskSubItems
+          .filter(item => item.trim().length > 0)
+          .map(title => {
+            const matched = existingChecklist.find(c => c.title.trim().toLowerCase() === title.trim().toLowerCase());
+            return {
+              title: title.trim(),
+              completed: matched ? matched.completed : false
+            };
+          });
+
+        await TaskAPI.update(taskId, {
+          title: taskTitle.trim(),
+          description: taskDesc.trim(),
+          priority: taskPriority,
+          status: taskStatus,
+          tags,
+          checklist: mergedChecklist
+        });
+      } else {
+        await TaskAPI.create({
+          title: taskTitle.trim(),
+          description: taskDesc.trim(),
+          priority: taskPriority,
+          status: taskStatus,
+          tags,
+          checklist
+        });
+      }
+
+      handleCloseModal();
       onRefresh();
     } catch (err: any) {
-      alert(`Lỗi tạo task: ${err.message}`);
+      alert(`Lỗi lưu task: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -111,6 +230,36 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     }
   };
 
+  const getStatusColor = (status?: TaskStatus) => {
+    switch (status) {
+      case 'IN_PROGRESS': return '#f59e0b';
+      case 'COMPLETED': return '#10b981';
+      case 'ARCHIVED': return '#94a3b8';
+      case 'TODO':
+      default: return '#818cf8';
+    }
+  };
+
+  const getStatusBg = (status?: TaskStatus) => {
+    switch (status) {
+      case 'IN_PROGRESS': return 'rgba(245, 158, 11, 0.15)';
+      case 'COMPLETED': return 'rgba(16, 185, 129, 0.15)';
+      case 'ARCHIVED': return 'rgba(148, 163, 184, 0.15)';
+      case 'TODO':
+      default: return 'rgba(99, 102, 241, 0.15)';
+    }
+  };
+
+  const getStatusBorder = (status?: TaskStatus) => {
+    switch (status) {
+      case 'IN_PROGRESS': return '1px solid rgba(245, 158, 11, 0.35)';
+      case 'COMPLETED': return '1px solid rgba(16, 185, 129, 0.35)';
+      case 'ARCHIVED': return '1px solid rgba(148, 163, 184, 0.35)';
+      case 'TODO':
+      default: return '1px solid rgba(99, 102, 241, 0.35)';
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header & Filters */}
@@ -122,43 +271,61 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         gap: '1rem'
       }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '0.25rem' }}>
+          <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ListTodo size={24} style={{ color: 'var(--accent-primary)' }} />
             Danh Sách Checklist & Sub-tasks
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Quản lý công việc đa cấp
+            Quản lý và thay đổi trạng thái tiến độ công việc
           </p>
         </div>
 
-        <div style={{ 
-          display: 'flex', 
-          gap: '0.35rem', 
-          background: 'rgba(0,0,0,0.3)', 
-          padding: '4px', 
-          borderRadius: 'var(--radius-md)',
-          overflowX: 'auto',
-          maxWidth: '100%'
-        }}>
-          {['ALL', 'TODO', 'IN_PROGRESS', 'COMPLETED'].map(st => (
-            <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
-              style={{
-                padding: '0.4rem 0.75rem',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                background: filterStatus === st ? 'var(--accent-primary)' : 'transparent',
-                color: filterStatus === st ? '#fff' : 'var(--text-muted)',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {st === 'ALL' ? 'Tất cả' : st === 'TODO' ? 'Cần làm' : st === 'IN_PROGRESS' ? 'Đang làm' : 'Đã xong'}
-            </button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Status Filter Tabs */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '0.35rem', 
+            background: 'rgba(0,0,0,0.3)', 
+            padding: '4px', 
+            borderRadius: 'var(--radius-md)',
+            overflowX: 'auto',
+            maxWidth: '100%'
+          }}>
+            {[
+              { id: 'ALL', label: 'Tất cả' },
+              { id: 'TODO', label: '📋 Cần làm' },
+              { id: 'IN_PROGRESS', label: '⚡ Đang làm' },
+              { id: 'COMPLETED', label: '✅ Đã xong' },
+              { id: 'ARCHIVED', label: '📦 Lưu trữ' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setFilterStatus(tab.id)}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  background: filterStatus === tab.id ? 'var(--accent-primary)' : 'transparent',
+                  color: filterStatus === tab.id ? '#fff' : 'var(--text-muted)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleOpenCreateModal}
+            className="btn btn-primary"
+            style={{ fontSize: '0.825rem', padding: '0.45rem 0.85rem', whiteSpace: 'nowrap' }}
+          >
+            <Plus size={15} /> Thêm Task
+          </button>
         </div>
       </div>
 
@@ -167,69 +334,171 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         {filteredTasks.length === 0 ? (
           <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
             <AlertCircle size={40} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <p>Chưa có task nào trong danh mục này.</p>
+            <p style={{ marginBottom: '0.75rem' }}>Chưa có task nào trong danh mục này.</p>
+            <button
+              onClick={handleOpenCreateModal}
+              className="btn btn-secondary"
+              style={{ fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
+            >
+              <Plus size={14} /> Tạo task mới ngay
+            </button>
           </div>
         ) : (
           filteredTasks.map(task => {
             const taskId = task.id || task._id || '';
             const checklist = task.checklist || [];
             const completedCount = checklist.filter(c => c.completed).length;
-            const progressPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : 0;
+            const progressPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : (task.status === 'COMPLETED' ? 100 : 0);
             const isExpanded = expandedTaskIds[taskId] ?? true;
+            const isCompleted = task.status === 'COMPLETED';
 
             return (
-              <div key={taskId} className="glass-card" style={{ padding: '1.25rem', position: 'relative' }}>
+              <div 
+                key={taskId} 
+                className="glass-card" 
+                style={{ 
+                  padding: '1.25rem', 
+                  position: 'relative',
+                  borderLeft: `4px solid ${getStatusColor(task.status)}`,
+                  opacity: isCompleted ? 0.85 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                      {getPriorityBadge(task.priority)}
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+                  {/* Left: Quick Completion Checkbox & Task Information */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                    {/* Main Task Checkbox Toggle */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleMainTaskComplete(task, e)}
+                      className="btn-icon"
+                      style={{ 
+                        padding: '2px', 
+                        marginTop: '2px', 
+                        color: isCompleted ? 'var(--accent-success)' : 'var(--text-dim)',
+                        flexShrink: 0
+                      }}
+                      title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
+                    >
+                      {isCompleted ? <CheckSquare size={22} color="var(--accent-success)" /> : <Square size={22} />}
+                    </button>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Priority, Status Selector, and Badges Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                        {getPriorityBadge(task.priority)}
+
+                        {/* Interactive Status Selector Dropdown */}
+                        <div style={{ position: 'relative', display: 'inline-block' }} onClick={e => e.stopPropagation()}>
+                          <select
+                            value={task.status || 'TODO'}
+                            onChange={(e) => handleUpdateStatus(taskId, e.target.value as TaskStatus, e)}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              border: getStatusBorder(task.status),
+                              background: getStatusBg(task.status),
+                              color: getStatusColor(task.status),
+                              outline: 'none',
+                              appearance: 'none',
+                              WebkitAppearance: 'none',
+                              paddingRight: '18px',
+                              backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='${encodeURIComponent(getStatusColor(task.status))}' height='14' viewBox='0 0 24 24' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")`,
+                              backgroundRepeat: 'no-repeat',
+                              backgroundPosition: 'right 3px center'
+                            }}
+                            title="Nhấn để đổi trạng thái công việc"
+                          >
+                            <option value="TODO" style={{ background: '#0f172a', color: '#818cf8' }}>📋 Cần làm (TODO)</option>
+                            <option value="IN_PROGRESS" style={{ background: '#0f172a', color: '#f59e0b' }}>⚡ Đang làm (IN_PROGRESS)</option>
+                            <option value="COMPLETED" style={{ background: '#0f172a', color: '#10b981' }}>✅ Đã xong (COMPLETED)</option>
+                            <option value="ARCHIVED" style={{ background: '#0f172a', color: '#94a3b8' }}>📦 Lưu trữ (ARCHIVED)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <h3 style={{ 
+                        fontSize: '1.1rem', 
+                        fontWeight: 600, 
+                        color: isCompleted ? 'rgba(255, 255, 255, 0.65)' : '#fff', 
+                        textDecoration: isCompleted ? 'line-through' : 'none',
+                        wordBreak: 'break-word',
+                        marginBottom: task.description ? '0.35rem' : '0.5rem'
+                      }}>
                         {task.title}
                       </h3>
-                    </div>
 
-                    {task.description && (
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', wordBreak: 'break-word' }}>
-                        {task.description}
-                      </p>
-                    )}
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                      {(task.tags || []).map((tag, i) => (
-                        <span key={i} className="tag-pill">
-                          <Tag size={12} /> {tag}
-                        </span>
-                      ))}
-
-                      {task.estimatedMinutes && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <Clock size={13} /> {task.estimatedMinutes} phút
-                        </span>
+                      {task.description && (
+                        <p style={{ 
+                          fontSize: '0.85rem', 
+                          color: 'var(--text-muted)', 
+                          marginBottom: '0.65rem', 
+                          wordBreak: 'break-word',
+                          lineHeight: '1.4'
+                        }}>
+                          {task.description}
+                        </p>
                       )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                        {(task.tags || []).map((tag, i) => (
+                          <span key={i} className="tag-pill">
+                            <Tag size={12} /> {tag}
+                          </span>
+                        ))}
+
+                        {task.estimatedMinutes && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Clock size={13} /> {task.estimatedMinutes} phút
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
+                  {/* Right Actions */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
-                    <button className="btn-icon" onClick={() => toggleExpand(taskId)}>
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    <button 
+                      className="btn-icon" 
+                      onClick={(e) => handleOpenEditModal(task, e)}
+                      title="Chỉnh sửa task"
+                    >
+                      <Edit3 size={17} />
                     </button>
-                    <button className="btn-icon" style={{ color: 'var(--accent-danger)' }} onClick={() => handleDeleteTask(taskId)}>
-                      <Trash2 size={18} />
+                    <button 
+                      className="btn-icon" 
+                      style={{ color: 'var(--accent-danger)' }} 
+                      onClick={(e) => promptDeleteTask(task, e)}
+                      title="Xóa task"
+                    >
+                      <Trash2 size={17} />
                     </button>
+                    {checklist.length > 0 && (
+                      <button 
+                        className="btn-icon" 
+                        onClick={() => toggleExpand(taskId)}
+                        title={isExpanded ? 'Thu gọn sub-tasks' : 'Mở rộng sub-tasks'}
+                      >
+                        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* Progress Bar & Sub-tasks section */}
-                {isExpanded && (
-                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                {checklist.length > 0 && isExpanded && (
+                  <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
                       <span>Tiến độ sub-tasks</span>
                       <span style={{ fontWeight: 600, color: progressPercent === 100 ? 'var(--accent-success)' : '#fff' }}>
                         {completedCount} / {checklist.length} ({progressPercent}%)
                       </span>
                     </div>
-                    <div className="progress-container" style={{ marginBottom: '1rem' }}>
-                      <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+                    <div className="progress-container" style={{ marginBottom: '0.85rem' }}>
+                      <div className="progress-fill" style={{ width: `${progressPercent}%`, background: progressPercent === 100 ? 'var(--accent-success)' : undefined }} />
                     </div>
 
                     {/* Sub-items list */}
@@ -237,26 +506,26 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                       {checklist.map(subItem => (
                         <div
                           key={subItem.id}
-                          onClick={() => handleToggleSubTask(taskId, subItem.id)}
+                          onClick={(e) => handleToggleSubTask(taskId, subItem.id, e)}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.65rem',
-                            padding: '0.6rem 0.75rem',
+                            padding: '0.55rem 0.75rem',
                             background: subItem.completed ? 'rgba(16, 185, 129, 0.05)' : 'rgba(0, 0, 0, 0.2)',
                             borderRadius: 'var(--radius-sm)',
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
-                            border: subItem.completed ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid transparent'
+                            border: subItem.completed ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(255, 255, 255, 0.03)'
                           }}
                         >
                           {subItem.completed ? (
-                            <CheckSquare size={18} color="var(--accent-success)" style={{ flexShrink: 0 }} />
+                            <CheckSquare size={17} color="var(--accent-success)" style={{ flexShrink: 0 }} />
                           ) : (
-                            <Square size={18} color="var(--text-dim)" style={{ flexShrink: 0 }} />
+                            <Square size={17} color="var(--text-dim)" style={{ flexShrink: 0 }} />
                           )}
                           <span style={{
-                            fontSize: '0.875rem',
+                            fontSize: '0.85rem',
                             color: subItem.completed ? 'var(--text-dim)' : 'var(--text-main)',
                             textDecoration: subItem.completed ? 'line-through' : 'none',
                             wordBreak: 'break-word'
@@ -274,44 +543,90 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         )}
       </div>
 
-      {/* Create Task Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay" onClick={onCloseCreateModal}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '1.25rem' }}>
-              Tạo Checklist Task Mới
-            </h3>
-            <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Create / Edit Task Modal */}
+      {isModalVisible && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '540px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: editingTask ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                  border: `1px solid ${editingTask ? 'rgba(245, 158, 11, 0.35)' : 'rgba(99, 102, 241, 0.35)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: editingTask ? '#f59e0b' : '#818cf8'
+                }}>
+                  {editingTask ? <Edit3 size={18} /> : <Plus size={18} />}
+                </div>
+                <h3 style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 700, margin: 0 }}>
+                  {editingTask ? 'Chỉnh Sửa Checklist Task' : 'Tạo Checklist Task Mới'}
+                </h3>
+              </div>
+
+              <button onClick={handleCloseModal} className="btn-icon" style={{ color: 'var(--text-muted)' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Tên công việc *</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  Tên công việc *
+                </label>
                 <input
                   type="text"
                   className="form-input"
                   placeholder="Ví dụ: Xây dựng Monorepo với Express API"
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
+                  value={taskTitle}
+                  onChange={e => setTaskTitle(e.target.value)}
+                  autoFocus
                   required
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Mô tả chi tiết</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  Mô tả chi tiết
+                </label>
                 <textarea
                   className="form-input"
-                  style={{ minHeight: '70px', resize: 'vertical' }}
-                  placeholder="Nội dung cần thực hiện..."
-                  value={newDesc}
-                  onChange={e => setNewDesc(e.target.value)}
+                  style={{ minHeight: '65px', resize: 'vertical' }}
+                  placeholder="Nội dung và mục tiêu cần thực hiện..."
+                  value={taskDesc}
+                  onChange={e => setTaskDesc(e.target.value)}
                 />
               </div>
 
+              {/* Status & Priority Row */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Mức độ ưu tiên</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                    Trạng thái công việc
+                  </label>
                   <select
                     className="form-input"
-                    value={newPriority}
-                    onChange={e => setNewPriority(e.target.value as Priority)}
+                    value={taskStatus}
+                    onChange={e => setTaskStatus(e.target.value as TaskStatus)}
+                  >
+                    <option value="TODO">📋 Cần làm (TODO)</option>
+                    <option value="IN_PROGRESS">⚡ Đang làm (IN_PROGRESS)</option>
+                    <option value="COMPLETED">✅ Đã xong (COMPLETED)</option>
+                    <option value="ARCHIVED">📦 Lưu trữ (ARCHIVED)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                    Mức độ ưu tiên
+                  </label>
+                  <select
+                    className="form-input"
+                    value={taskPriority}
+                    onChange={e => setTaskPriority(e.target.value as Priority)}
                   >
                     <option value="LOW">Thấp (Low)</option>
                     <option value="MEDIUM">Trung bình (Medium)</option>
@@ -319,36 +634,54 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     <option value="URGENT">Khẩn cấp (Urgent)</option>
                   </select>
                 </div>
-
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Tags (phân cách dấu phẩy)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Học tâp, Thể thao, Giải trí"
-                    value={newTags}
-                    onChange={e => setNewTags(e.target.value)}
-                  />
-                </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Danh sách Sub-tasks (Checklist Items)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {newSubItems.map((item, idx) => (
-                    <input
-                      key={idx}
-                      type="text"
-                      className="form-input"
-                      placeholder={`Bước ${idx + 1}...`}
-                      value={item}
-                      onChange={e => handleSubItemChange(idx, e.target.value)}
-                    />
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  Tags (phân cách dấu phẩy)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Học tập, Dự án, Công việc"
+                  value={taskTags}
+                  onChange={e => setTaskTags(e.target.value)}
+                />
+              </div>
+
+              {/* Sub-tasks checklist */}
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  Danh sách Sub-tasks (Checklist Items)
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  {taskSubItems.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        style={{ flex: 1 }}
+                        placeholder={`Bước ${idx + 1}...`}
+                        value={item}
+                        onChange={e => handleSubItemChange(idx, e.target.value)}
+                      />
+                      {taskSubItems.length > 1 && (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          style={{ color: 'var(--text-dim)', padding: '4px' }}
+                          onClick={() => handleRemoveSubItemInput(idx)}
+                          title="Xóa bước này"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                   <button
                     type="button"
                     className="btn btn-secondary"
-                    style={{ fontSize: '0.8rem', padding: '0.4rem' }}
+                    style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem', alignSelf: 'flex-start', marginTop: '0.2rem' }}
                     onClick={handleAddSubItemInput}
                   >
                     <Plus size={14} /> Thêm Sub-item
@@ -356,15 +689,98 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={onCloseCreateModal}>
-                  Hủy
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? 'Đang lưu...' : 'Lưu Task Mới'}
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                {editingTask ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#ef4444',
+                      fontSize: '0.825rem'
+                    }}
+                    onClick={() => promptDeleteTask(editingTask)}
+                  >
+                    <Trash2 size={14} /> Xóa task
+                  </button>
+                ) : <div />}
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>
+                    Hủy
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? 'Đang lưu...' : (editingTask ? 'Cập Nhật Task' : 'Lưu Task Mới')}
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Popup */}
+      {deleteTargetTask && (
+        <div className="modal-overlay" onClick={() => setDeleteTargetTask(null)} style={{ zIndex: 1100 }}>
+          <div
+            className="modal-card"
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '430px',
+              textAlign: 'center',
+              padding: '1.75rem',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)'
+            }}
+          >
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '2px solid rgba(239, 68, 68, 0.3)',
+              color: '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem auto'
+            }}>
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 700, marginBottom: '0.6rem' }}>
+              Xác nhận xóa Checklist Task?
+            </h3>
+
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Bạn có chắc chắn muốn xóa task <strong style={{ color: '#fff' }}>"{deleteTargetTask.title}"</strong>? Hành động này không thể hoàn tác.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ minWidth: '110px' }}
+                onClick={() => setDeleteTargetTask(null)}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{
+                  minWidth: '130px',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)'
+                }}
+                onClick={confirmDeleteTask}
+              >
+                Xác nhận xóa
+              </button>
+            </div>
           </div>
         </div>
       )}
