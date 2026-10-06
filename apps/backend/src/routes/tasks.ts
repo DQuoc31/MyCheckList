@@ -16,6 +16,17 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.userId;
     if (isDbConnected()) {
+      // Auto-archive overdue tasks that are still in TODO or IN_PROGRESS
+      const nowIso = new Date().toISOString();
+      await TaskModel.updateMany(
+        {
+          userId,
+          dueDate: { $exists: true, $ne: '', $lt: nowIso },
+          status: { $in: ['TODO', 'IN_PROGRESS'] }
+        },
+        { $set: { status: 'ARCHIVED' } }
+      );
+
       const tasks = await TaskModel.find({ userId }).sort({ createdAt: -1 });
       return res.json({ success: true, data: tasks });
     }

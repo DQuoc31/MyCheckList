@@ -16,7 +16,8 @@ import {
   CheckCircle2,
   PlayCircle,
   Archive,
-  ListTodo
+  ListTodo,
+  Calendar
 } from 'lucide-react';
 import { TaskAPI } from '../services/api';
 
@@ -49,9 +50,52 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
   const [taskDesc, setTaskDesc] = useState('');
   const [taskPriority, setTaskPriority] = useState<Priority>('MEDIUM');
   const [taskStatus, setTaskStatus] = useState<TaskStatus>('TODO');
+  const [taskDueDate, setTaskDueDate] = useState('');
   const [taskTags, setTaskTags] = useState('');
   const [taskSubItems, setTaskSubItems] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Date format helpers
+  const formatForDateTimeLocal = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const y = d.getFullYear();
+      const m = pad(d.getMonth() + 1);
+      const day = pad(d.getDate());
+      const h = pad(d.getHours());
+      const min = pad(d.getMinutes());
+      return `${y}-${m}-${day}T${h}:${min}`;
+    } catch {
+      return '';
+    }
+  };
+
+  const formatDisplayDateTime = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
+  const isTaskOverdue = (task: ITask) => {
+    if (!task.dueDate || task.status === 'COMPLETED') return false;
+    try {
+      return new Date(task.dueDate).getTime() < Date.now();
+    } catch {
+      return false;
+    }
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedTaskIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -70,6 +114,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     setTaskDesc(task.description || '');
     setTaskPriority(task.priority || 'MEDIUM');
     setTaskStatus(task.status || 'TODO');
+    setTaskDueDate(task.dueDate ? formatForDateTimeLocal(task.dueDate) : '');
     setTaskTags((task.tags || []).join(', '));
     const subs = (task.checklist || []).map(c => c.title);
     setTaskSubItems(subs.length > 0 ? subs : ['']);
@@ -82,6 +127,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     setTaskDesc('');
     setTaskPriority('MEDIUM');
     setTaskStatus('TODO');
+    setTaskDueDate('');
     setTaskTags('');
     setTaskSubItems(['']);
     setIsLocalModalOpen(true);
@@ -172,6 +218,14 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         .map(t => t.trim())
         .filter(t => t.length > 0);
 
+      const parsedDueDate = taskDueDate ? new Date(taskDueDate).toISOString() : undefined;
+
+      // Auto-set to ARCHIVED if user enters an overdue deadline and status was TODO/IN_PROGRESS
+      let finalStatus = taskStatus;
+      if (parsedDueDate && new Date(parsedDueDate).getTime() < Date.now() && (finalStatus === 'TODO' || finalStatus === 'IN_PROGRESS')) {
+        finalStatus = 'ARCHIVED';
+      }
+
       if (editingTask) {
         const taskId = editingTask.id || editingTask._id;
         if (!taskId) throw new Error('Không tìm thấy ID task');
@@ -192,7 +246,8 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
           title: taskTitle.trim(),
           description: taskDesc.trim(),
           priority: taskPriority,
-          status: taskStatus,
+          status: finalStatus,
+          dueDate: parsedDueDate,
           tags,
           checklist: mergedChecklist
         });
@@ -201,7 +256,8 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
           title: taskTitle.trim(),
           description: taskDesc.trim(),
           priority: taskPriority,
-          status: taskStatus,
+          status: finalStatus,
+          dueDate: parsedDueDate,
           tags,
           checklist
         });
@@ -216,9 +272,16 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     }
   };
 
+  const effectiveStatus = (task: ITask): TaskStatus => {
+    if (task.status === 'COMPLETED') return 'COMPLETED';
+    if (isTaskOverdue(task)) return 'ARCHIVED';
+    return task.status || 'TODO';
+  };
+
   const filteredTasks = tasks.filter(task => {
     if (filterStatus === 'ALL') return true;
-    return task.status === filterStatus;
+    const effStatus = effectiveStatus(task);
+    return effStatus === filterStatus;
   });
 
   const getPriorityBadge = (priority: Priority) => {
@@ -276,7 +339,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
             Danh Sách Checklist & Sub-tasks
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Quản lý và thay đổi trạng thái tiến độ công việc
+            Quản lý tiến độ, thời hạn deadline và trạng thái công việc
           </p>
         </div>
 
@@ -296,7 +359,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               { id: 'TODO', label: '📋 Cần làm' },
               { id: 'IN_PROGRESS', label: '⚡ Đang làm' },
               { id: 'COMPLETED', label: '✅ Đã xong' },
-              { id: 'ARCHIVED', label: '📦 Lưu trữ' }
+              { id: 'ARCHIVED', label: '📦 Lưu trữ / Quá hạn' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -348,9 +411,11 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
             const taskId = task.id || task._id || '';
             const checklist = task.checklist || [];
             const completedCount = checklist.filter(c => c.completed).length;
-            const progressPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : (task.status === 'COMPLETED' ? 100 : 0);
-            const isExpanded = expandedTaskIds[taskId] ?? true;
             const isCompleted = task.status === 'COMPLETED';
+            const progressPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : (isCompleted ? 100 : 0);
+            const isExpanded = expandedTaskIds[taskId] ?? true;
+            const isOverdue = isTaskOverdue(task);
+            const effStatus = effectiveStatus(task);
 
             return (
               <div 
@@ -359,8 +424,8 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 style={{ 
                   padding: '1.25rem', 
                   position: 'relative',
-                  borderLeft: `4px solid ${getStatusColor(task.status)}`,
-                  opacity: isCompleted ? 0.85 : 1,
+                  borderLeft: `4px solid ${isOverdue ? '#ef4444' : getStatusColor(task.status)}`,
+                  opacity: isCompleted ? 0.85 : (isOverdue ? 0.9 : 1),
                   transition: 'all 0.2s ease'
                 }}
               >
@@ -388,27 +453,24 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
                         {getPriorityBadge(task.priority)}
 
-                        {/* Interactive Status Selector Dropdown */}
-                        <div style={{ position: 'relative', display: 'inline-block' }} onClick={e => e.stopPropagation()}>
+                        {/* Interactive Status Selector Dropdown (Clean, robust, no background glitches) */}
+                        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                           <select
-                            value={task.status || 'TODO'}
+                            value={effStatus}
                             onChange={(e) => handleUpdateStatus(taskId, e.target.value as TaskStatus, e)}
                             style={{
-                              padding: '2px 8px',
+                              padding: '2px 24px 2px 8px',
                               borderRadius: '6px',
                               fontSize: '0.75rem',
                               fontWeight: 700,
                               cursor: 'pointer',
-                              border: getStatusBorder(task.status),
-                              background: getStatusBg(task.status),
-                              color: getStatusColor(task.status),
+                              border: isOverdue ? '1px solid rgba(239, 68, 68, 0.4)' : getStatusBorder(task.status),
+                              background: isOverdue ? 'rgba(239, 68, 68, 0.15)' : getStatusBg(task.status),
+                              color: isOverdue ? '#f87171' : getStatusColor(task.status),
                               outline: 'none',
                               appearance: 'none',
                               WebkitAppearance: 'none',
-                              paddingRight: '18px',
-                              backgroundImage: `url("data:image/svg+xml;utf8,<svg fill='${encodeURIComponent(getStatusColor(task.status))}' height='14' viewBox='0 0 24 24' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>")`,
-                              backgroundRepeat: 'no-repeat',
-                              backgroundPosition: 'right 3px center'
+                              MozAppearance: 'none'
                             }}
                             title="Nhấn để đổi trạng thái công việc"
                           >
@@ -417,7 +479,34 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                             <option value="COMPLETED" style={{ background: '#0f172a', color: '#10b981' }}>✅ Đã xong (COMPLETED)</option>
                             <option value="ARCHIVED" style={{ background: '#0f172a', color: '#94a3b8' }}>📦 Lưu trữ (ARCHIVED)</option>
                           </select>
+                          <ChevronDown 
+                            size={12} 
+                            style={{ 
+                              position: 'absolute', 
+                              right: '6px', 
+                              pointerEvents: 'none', 
+                              color: isOverdue ? '#f87171' : getStatusColor(task.status) 
+                            }} 
+                          />
                         </div>
+
+                        {/* Overdue Warning Badge */}
+                        {isOverdue && (
+                          <span style={{
+                            fontSize: '0.68rem',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.4)',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}>
+                            <AlertTriangle size={11} /> Đã quá hạn
+                          </span>
+                        )}
                       </div>
 
                       <h3 style={{ 
@@ -444,6 +533,25 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                       )}
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                        {/* Deadline badge */}
+                        {task.dueDate && (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            padding: '2px 7px',
+                            borderRadius: '4px',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            background: isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                            color: isOverdue ? '#f87171' : 'var(--text-muted)',
+                            border: isOverdue ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)'
+                          }}>
+                            <Calendar size={12} style={{ color: isOverdue ? '#ef4444' : '#818cf8' }} />
+                            <span>{isOverdue ? 'Hạn chót (Đã quá): ' : 'Hạn chót: '}{formatDisplayDateTime(task.dueDate)}</span>
+                          </span>
+                        )}
+
                         {(task.tags || []).map((tag, i) => (
                           <span key={i} className="tag-pill">
                             <Tag size={12} /> {tag}
@@ -634,6 +742,22 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     <option value="URGENT">Khẩn cấp (Urgent)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Deadline (Hạn chót) */}
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
+                  📅 Hạn chót (Deadline)
+                </label>
+                <input
+                  type="datetime-local"
+                  className="form-input"
+                  value={taskDueDate}
+                  onChange={e => setTaskDueDate(e.target.value)}
+                />
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '3px', display: 'block' }}>
+                  💡 Nếu công việc quá hạn chót mà chưa hoàn thành, hệ thống sẽ tự động chuyển vào mục <strong>Lưu trữ (Archived)</strong>.
+                </span>
               </div>
 
               <div>
