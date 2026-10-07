@@ -57,6 +57,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<string>('ALL');
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>('ALL');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -378,9 +379,9 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     return Array.from(set);
   }, [tasks]);
 
-  // Filter tasks based on search, priority, tag
+  // Filter tasks based on search, status, priority, tag, then automatically sort by deadline (closest first)
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
+    const matched = tasks.filter(task => {
       // Search text query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -388,6 +389,14 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         const matchDesc = (task.description || '').toLowerCase().includes(q);
         const matchTags = (task.tags || []).some(t => t.toLowerCase().includes(q));
         if (!matchTitle && !matchDesc && !matchTags) return false;
+      }
+
+      // Status filter
+      if (selectedStatusFilter !== 'ALL') {
+        const taskStatus = task.status || 'TODO';
+        if (taskStatus !== selectedStatusFilter) {
+          return false;
+        }
       }
 
       // Priority filter
@@ -402,9 +411,71 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
 
       return true;
     });
+
+    // Auto-sort: Tasks with nearest deadline first; tasks without deadline at the end (sorted by newest createdAt)
+    return [...matched].sort((a, b) => {
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bCreated - aCreated;
+    });
+  }, [tasks, searchQuery, selectedStatusFilter, selectedPriorityFilter, selectedTagFilter]);
+
+  // Status counts for List view tabs (respecting search, priority, tag filters)
+  const statusCounts = useMemo(() => {
+    const baseFiltered = tasks.filter(task => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = (task.title || '').toLowerCase().includes(q);
+        const matchDesc = (task.description || '').toLowerCase().includes(q);
+        const matchTags = (task.tags || []).some(t => t.toLowerCase().includes(q));
+        if (!matchTitle && !matchDesc && !matchTags) return false;
+      }
+      if (selectedPriorityFilter !== 'ALL' && task.priority !== selectedPriorityFilter) return false;
+      if (selectedTagFilter !== 'ALL' && !(task.tags || []).includes(selectedTagFilter)) return false;
+      return true;
+    });
+
+    const counts: Record<string, number> = {
+      ALL: baseFiltered.length,
+      TODO: 0,
+      IN_PROGRESS: 0,
+      ARCHIVED: 0,
+      COMPLETED: 0
+    };
+
+    baseFiltered.forEach(t => {
+      const st = t.status || 'TODO';
+      if (counts[st] !== undefined) {
+        counts[st]++;
+      }
+    });
+
+    return counts;
   }, [tasks, searchQuery, selectedPriorityFilter, selectedTagFilter]);
 
-  // Group tasks by status for Kanban Board
+  // Status badge styling helper
+  const getStatusBadgeInfo = (status: TaskStatus) => {
+    switch (status) {
+      case 'TODO':
+        return { label: 'To Do', bg: 'rgba(21, 128, 61, 0.1)', color: '#15803d', border: 'rgba(21, 128, 61, 0.25)' };
+      case 'IN_PROGRESS':
+        return { label: 'In Progress', bg: 'rgba(217, 119, 6, 0.12)', color: '#d97706', border: 'rgba(217, 119, 6, 0.25)' };
+      case 'ARCHIVED':
+        return { label: 'Lưu trữ', bg: 'rgba(100, 116, 139, 0.12)', color: '#64748b', border: 'rgba(100, 116, 139, 0.25)' };
+      case 'COMPLETED':
+        return { label: 'Done', bg: 'rgba(22, 163, 74, 0.12)', color: '#16a34a', border: 'rgba(22, 163, 74, 0.25)' };
+      default:
+        return { label: status, bg: 'rgba(100, 116, 139, 0.12)', color: '#64748b', border: 'rgba(100, 116, 139, 0.25)' };
+    }
+  };
+
+  // Group tasks by status for Kanban Board (Kanban displays columns independently of status filter, or uses all filtered)
   const columnsData = useMemo(() => {
     const map: Record<TaskStatus, ITask[]> = {
       TODO: [],
@@ -413,6 +484,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
       COMPLETED: []
     };
 
+    // For board, filter by search, priority, tag (and status if explicitly filtered)
     filteredTasks.forEach(task => {
       let st: TaskStatus = task.status || 'TODO';
       if (!map[st]) st = 'TODO';
@@ -501,9 +573,9 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                background: selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
-                border: `1px solid ${selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                color: selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'var(--accent-primary)' : 'var(--text-main)',
+                background: selectedStatusFilter !== 'ALL' || selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
+                border: `1px solid ${selectedStatusFilter !== 'ALL' || selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                color: selectedStatusFilter !== 'ALL' || selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'var(--accent-primary)' : 'var(--text-main)',
                 padding: '0.42rem 0.85rem',
                 borderRadius: '8px',
                 fontSize: '0.825rem',
@@ -536,6 +608,24 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                   gap: '0.65rem'
                 }}
               >
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                    Trạng thái (Status)
+                  </label>
+                  <select
+                    value={selectedStatusFilter}
+                    onChange={e => setSelectedStatusFilter(e.target.value)}
+                    className="form-input"
+                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
+                  >
+                    <option value="ALL">Tất cả trạng thái</option>
+                    <option value="TODO">📋 To Do</option>
+                    <option value="IN_PROGRESS">⚡ In Progress</option>
+                    <option value="ARCHIVED">📦 Lưu trữ (Archived)</option>
+                    <option value="COMPLETED">✅ Done</option>
+                  </select>
+                </div>
+
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
                     Ưu tiên (Priority)
@@ -577,6 +667,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                   <button
                     type="button"
                     onClick={() => {
+                      setSelectedStatusFilter('ALL');
                       setSelectedPriorityFilter('ALL');
                       setSelectedTagFilter('ALL');
                       setShowFilterDropdown(false);
@@ -970,19 +1061,95 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         </div>
       ) : (
         /* ========================================================================= */
-        /* 2. LIST VIEW (Alternative view mode) */
+        /* 2. LIST VIEW (Alternative view mode with Status filtering) */
         /* ========================================================================= */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {/* Status Filter Tab Pills for List View */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            overflowX: 'auto',
+            padding: '0.25rem 0',
+            scrollbarWidth: 'none'
+          }}>
+            {[
+              { id: 'ALL', label: 'Tất cả' },
+              { id: 'TODO', label: 'To Do' },
+              { id: 'IN_PROGRESS', label: 'In Progress' },
+              { id: 'ARCHIVED', label: 'Lưu trữ' },
+              { id: 'COMPLETED', label: 'Done' }
+            ].map(tab => {
+              const isSelected = selectedStatusFilter === tab.id;
+              const count = statusCounts[tab.id] ?? 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSelectedStatusFilter(tab.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '999px',
+                    border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                    background: isSelected ? 'rgba(21, 128, 61, 0.12)' : '#ffffff',
+                    color: isSelected ? 'var(--accent-primary)' : 'var(--text-main)',
+                    fontSize: '0.825rem',
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isSelected ? '0 1px 4px rgba(21, 128, 61, 0.15)' : 'none'
+                  }}
+                >
+                  <span>{tab.label}</span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '1px 6px',
+                    borderRadius: '999px',
+                    background: isSelected ? 'var(--accent-primary)' : 'rgba(0,0,0,0.06)',
+                    color: isSelected ? '#ffffff' : 'var(--text-muted)'
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {filteredTasks.length === 0 ? (
             <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               <AlertCircle size={40} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-              <p style={{ marginBottom: '0.75rem', color: 'var(--text-main)', fontWeight: 600 }}>Không tìm thấy công việc phù hợp.</p>
-              <button onClick={() => handleOpenCreateModal('TODO')} className="btn btn-primary">
-                <Plus size={15} /> Tạo task mới ngay
-              </button>
+              <p style={{ marginBottom: '0.75rem', color: 'var(--text-main)', fontWeight: 600 }}>
+                {selectedStatusFilter !== 'ALL' || selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' || searchQuery.trim()
+                  ? 'Không tìm thấy công việc nào phù hợp với bộ lọc hiện tại.'
+                  : 'Chưa có công việc nào.'}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {(selectedStatusFilter !== 'ALL' || selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' || searchQuery.trim()) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedStatusFilter('ALL');
+                      setSelectedPriorityFilter('ALL');
+                      setSelectedTagFilter('ALL');
+                      setSearchQuery('');
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    Đặt lại bộ lọc
+                  </button>
+                )}
+                <button onClick={() => handleOpenCreateModal(selectedStatusFilter !== 'ALL' ? (selectedStatusFilter as TaskStatus) : 'TODO')} className="btn btn-primary">
+                  <Plus size={15} /> Tạo task mới
+                </button>
+              </div>
             </div>
           ) : (
-            filteredTasks.map((task, idx) => {
+            filteredTasks.map((task) => {
               const taskId = task.id || task._id || '';
               const checklist = task.checklist || [];
               const completedCount = checklist.filter(c => c.completed).length;
@@ -991,6 +1158,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               const isOverdue = isTaskOverdue(task);
               const urgency = getDeadlineUrgency(task);
               const isDueSoon = urgency === 'DUE_SOON';
+              const statusBadge = getStatusBadgeInfo(task.status || 'TODO');
 
               return (
                 <div
@@ -1001,62 +1169,153 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     borderLeft: `4px solid ${isCompleted ? '#16a34a' : isOverdue ? '#dc2626' : isDueSoon ? '#d97706' : '#15803d'}`,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.5rem'
+                    gap: '0.55rem',
+                    transition: 'box-shadow 0.15s ease, border-color 0.15s ease'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1, minWidth: 0 }}>
                       <button
                         type="button"
                         onClick={(e) => handleToggleMainTaskComplete(task, e)}
-                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
+                        style={{ background: 'none', border: 'none', padding: '2px 0 0 0', cursor: 'pointer', display: 'flex' }}
+                        title={isCompleted ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
                       >
                         {isCompleted ? <CheckSquare size={20} color="var(--accent-success)" /> : <Square size={20} color="#64748b" />}
                       </button>
 
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                        {/* Meta row: Status badge, Priority, Tags, Deadline */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+                          {/* Status Badge */}
                           <span style={{
-                            fontSize: '0.68rem',
-                            padding: '1px 6px',
+                            fontSize: '0.7rem',
+                            padding: '2px 7px',
                             borderRadius: '4px',
-                            background: 'rgba(21, 128, 61, 0.1)',
-                            color: 'var(--accent-primary)',
+                            background: statusBadge.bg,
+                            color: statusBadge.color,
+                            border: `1px solid ${statusBadge.border}`,
                             fontWeight: 700
                           }}>
-                            {task.status}
+                            {statusBadge.label}
                           </span>
+
+                          {/* Priority Icon & Label */}
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(0,0,0,0.04)',
+                            color: 'var(--text-muted)'
+                          }}>
+                            {renderPriorityIcon(task.priority)}
+                            <span>{task.priority}</span>
+                          </span>
+
+                          {/* Tags */}
+                          {(task.tags || []).map((tag, tIdx) => (
+                            <span
+                              key={tIdx}
+                              style={{
+                                fontSize: '0.68rem',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                background: 'rgba(21, 128, 61, 0.08)',
+                                color: 'var(--accent-primary)',
+                                fontWeight: 600
+                              }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+
+                          {/* Deadline badge */}
+                          {task.dueDate && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              fontSize: '0.72rem',
+                              fontWeight: isOverdue || isDueSoon ? 700 : 500,
+                              color: isOverdue ? '#dc2626' : isDueSoon ? '#d97706' : 'var(--text-muted)'
+                            }}>
+                              <Clock size={11} />
+                              <span>{formatDisplayDateTime(task.dueDate)}</span>
+                              {isDueSoon && <span>({formatRemainingTime(task.dueDate)})</span>}
+                            </span>
+                          )}
                         </div>
-                        <h4 style={{
-                          fontSize: '0.95rem',
-                          fontWeight: 700,
-                          color: isCompleted ? 'var(--text-dim)' : 'var(--text-main)',
-                          textDecoration: isCompleted ? 'line-through' : 'none',
-                          margin: 0
-                        }}>
+
+                        <h4
+                          onClick={() => handleOpenEditModal(task)}
+                          style={{
+                            fontSize: '0.95rem',
+                            fontWeight: 700,
+                            color: isCompleted ? 'var(--text-dim)' : 'var(--text-main)',
+                            textDecoration: isCompleted ? 'line-through' : 'none',
+                            margin: '0 0 0.25rem 0',
+                            cursor: 'pointer'
+                          }}
+                        >
                           {task.title}
                         </h4>
+
+                        {task.description && (
+                          <p style={{
+                            fontSize: '0.78rem',
+                            color: 'var(--text-muted)',
+                            margin: 0,
+                            lineHeight: 1.4,
+                            maxHeight: '2.8em',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {task.description}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <button onClick={(e) => handleOpenEditModal(task, e)} className="btn-icon">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <button onClick={(e) => handleOpenEditModal(task, e)} className="btn-icon" title="Chỉnh sửa">
                         <Edit3 size={16} />
                       </button>
-                      <button onClick={(e) => promptDeleteTask(task, e)} className="btn-icon" style={{ color: 'var(--accent-danger)' }}>
+                      <button onClick={(e) => promptDeleteTask(task, e)} className="btn-icon" style={{ color: 'var(--accent-danger)' }} title="Xóa task">
                         <Trash2 size={16} />
                       </button>
                       {checklist.length > 0 && (
-                        <button onClick={() => toggleExpand(taskId)} className="btn-icon">
+                        <button onClick={() => toggleExpand(taskId)} className="btn-icon" title={isExpanded ? 'Thu gọn' : 'Mở rộng sub-tasks'}>
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Sub-items in list view */}
+                  {/* Sub-items progress and list */}
+                  {checklist.length > 0 && (
+                    <div style={{ marginTop: '0.2rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '0.25rem' }}>
+                        <span>Subtasks: {completedCount}/{checklist.length}</span>
+                        <span style={{ fontWeight: 600 }}>{Math.round((completedCount / checklist.length) * 100)}%</span>
+                      </div>
+                      <div className="progress-container" style={{ height: '4px' }}>
+                        <div
+                          className="progress-fill"
+                          style={{
+                            width: `${Math.round((completedCount / checklist.length) * 100)}%`,
+                            background: completedCount === checklist.length ? 'var(--accent-success)' : 'var(--accent-primary)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {checklist.length > 0 && isExpanded && (
-                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <div style={{ marginTop: '0.35rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       {checklist.map(sub => (
                         <div
                           key={sub.id}

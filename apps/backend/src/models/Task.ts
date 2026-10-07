@@ -28,7 +28,8 @@ const TaskSchema = new Schema<ITaskDocument>(
     tags: [{ type: String, trim: true }],
     dueDate: { type: String },
     estimatedMinutes: { type: Number, default: 30 },
-    checklist: [ChecklistItemSchema]
+    checklist: [ChecklistItemSchema],
+    completedAt: { type: Date, default: null }
   },
   {
     timestamps: true,
@@ -40,6 +41,15 @@ const TaskSchema = new Schema<ITaskDocument>(
         return ret;
       }
     }
+  }
+);
+
+// TTL index: Automatically delete completed tasks after 14 days (14 * 24 * 60 * 60 = 1209600s)
+TaskSchema.index(
+  { completedAt: 1 },
+  {
+    expireAfterSeconds: 14 * 24 * 60 * 60,
+    partialFilterExpression: { status: 'COMPLETED', completedAt: { $type: 'date' } }
   }
 );
 

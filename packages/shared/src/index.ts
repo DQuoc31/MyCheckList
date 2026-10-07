@@ -53,6 +53,7 @@ export interface ITask {
   dueDate?: string;
   estimatedMinutes?: number;
   checklist: IChecklistItem[];
+  completedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -106,6 +107,7 @@ export interface CreateTaskDto {
   tags?: string[];
   dueDate?: string;
   estimatedMinutes?: number;
+  completedAt?: string;
   checklist?: Array<{ title: string; completed?: boolean }>;
 }
 

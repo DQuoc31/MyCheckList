@@ -16,7 +16,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.userId;
     if (isDbConnected()) {
-      // Auto-archive overdue tasks that are still in TODO or IN_PROGRESS
+      // 1. Auto-archive overdue tasks that are still in TODO or IN_PROGRESS
       const nowIso = new Date().toISOString();
       await TaskModel.updateMany(
         {
@@ -26,6 +26,14 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
         },
         { $set: { status: 'ARCHIVED' } }
       );
+
+      // 2. Auto-delete completed tasks older than 14 days (Lazy cleanup fallback in addition to TTL index)
+      const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      await TaskModel.deleteMany({
+        userId,
+        status: 'COMPLETED',
+        completedAt: { $exists: true, $ne: null, $lt: fourteenDaysAgo }
+      });
 
       const tasks = await TaskModel.find({ userId }).sort({ createdAt: -1 });
       return res.json({ success: true, data: tasks });
@@ -68,17 +76,21 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
       completed: item.completed || false
     }));
 
+    const finalStatus = dto.status || 'TODO';
+    const completedAt = finalStatus === 'COMPLETED' ? new Date() : null;
+
     if (isDbConnected()) {
       const newTask = await TaskModel.create({
         userId,
         title: dto.title,
         description: dto.description || '',
         priority: dto.priority || 'MEDIUM',
-        status: dto.status || 'TODO',
+        status: finalStatus,
         tags: dto.tags || [],
         dueDate: dto.dueDate,
         estimatedMinutes: dto.estimatedMinutes || 30,
-        checklist: checklistItems
+        checklist: checklistItems,
+        completedAt
       });
       return res.status(201).json({ success: true, data: newTask });
     }
@@ -109,10 +121,20 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
         }));
       }
 
+      if (dto.status !== undefined) {
+        if (dto.status === 'COMPLETED') {
+          if (existing.status !== 'COMPLETED' || !existing.completedAt) {
+            existing.completedAt = new Date().toISOString() as any;
+          }
+        } else {
+          existing.completedAt = null as any;
+        }
+        existing.status = dto.status;
+      }
+
       existing.title = dto.title ?? existing.title;
       existing.description = dto.description ?? existing.description;
       existing.priority = dto.priority ?? existing.priority;
-      existing.status = dto.status ?? existing.status;
       existing.tags = dto.tags ?? existing.tags;
       existing.dueDate = dto.dueDate ?? existing.dueDate;
       existing.estimatedMinutes = dto.estimatedMinutes ?? existing.estimatedMinutes;

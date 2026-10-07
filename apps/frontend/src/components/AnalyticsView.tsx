@@ -120,7 +120,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
   // Synchronized 1:1 order with Sidebar (Tasks -> Habits -> Finances -> Overview)
   const categoryTabs = [
-    { id: 'TASKS' as const, label: 'Việc Cần Làm', icon: CheckSquare, color: '#15803d', badge: `${taskData.completionRate}% xong` },
+    { id: 'TASKS' as const, label: 'Việc Cần Làm (14 ngày)', icon: CheckSquare, color: '#15803d', badge: `${taskData.completionRate}% xong` },
     { id: 'HABITS' as const, label: 'Thói Quen', icon: Flame, color: '#d97706', badge: `${habitData.todayCompletedCount}/${habitData.totalHabits} đạt` },
     { id: 'FINANCES' as const, label: 'Thu Chi', icon: Wallet, color: '#16a34a', badge: formatVND(financeData.netBalance) },
     { id: 'OVERVIEW' as const, label: 'Tổng Quan', icon: BarChart3, color: '#0f766e', badge: 'Tất cả' }
@@ -352,22 +352,38 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 2. THỐNG KÊ VIỆC CẦN LÀM (TASKS ANALYTICS) */}
+      {/* 2. THỐNG KÊ VIỆC CẦN LÀM (TASKS ANALYTICS - 14 NGÀY GẦN ĐÂY) */}
       {/* ========================================================================= */}
       {activeCategory === 'TASKS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.2s ease' }}>
+          {/* Notice banner for 14-day retention */}
+          <div style={{
+            background: 'rgba(21, 128, 61, 0.08)',
+            border: '1px solid rgba(21, 128, 61, 0.2)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.65rem 1rem',
+            fontSize: '0.8rem',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <CheckSquare size={16} color="var(--accent-primary)" />
+            <span>Thống kê các task và tỷ lệ hoàn thành trong <strong>14 ngày gần đây</strong> (Task hoàn thành sau 14 ngày sẽ tự động dọn dẹp khỏi hệ thống).</span>
+          </div>
+
           {/* 4 Stat Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
             <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-success)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tỷ Lệ Hoàn Thành</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tỷ Lệ Hoàn Thành (14 ngày)</span>
                 <CheckCircle2 size={18} color="var(--accent-success)" />
               </div>
               <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {taskData.completionRate}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
-                {taskData.completedTasks} / {taskData.totalTasks} công việc đã xong
+                {taskData.completedTasks} / {taskData.totalTasks} công việc đã xong (14 ngày gần đây)
               </div>
             </div>
 
@@ -415,13 +431,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
             <div className="glass-card" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', marginBottom: '1.25rem', fontWeight: 700 }}>
-                Phân Bổ Trạng Thái Công Việc (Status Breakdown)
+                Phân Bổ Trạng Thái Công Việc (14 ngày gần đây)
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Đã hoàn thành (Completed)</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Đã hoàn thành (Done - lưu 14 ngày)</span>
                     <span style={{ color: 'var(--accent-success)', fontWeight: 600 }}>{taskData.completedTasks} tasks</span>
                   </div>
                   <div className="progress-container">
@@ -487,7 +503,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 {taskData.completionRate >= 80 ? '🌟 Năng Suất Tuyệt Vời!' : taskData.completionRate >= 50 ? '⚡ Tiến Độ Tốt!' : '💪 Tiếp Tục Cố Gắng!'}
               </h4>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '320px', margin: '0 auto' }}>
-                Bạn đã hoàn tất {taskData.completedTasks} trên tổng số {taskData.totalTasks} đầu việc đã lên kế hoạch.
+                Bạn đã hoàn tất {taskData.completedTasks} trên tổng số {taskData.totalTasks} đầu việc đã ghi nhận trong 14 ngày gần đây.
               </p>
             </div>
           </div>
@@ -643,7 +659,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
-                  <CheckSquare size={20} color="var(--accent-primary)" /> Năng Suất Công Việc
+                  <CheckSquare size={20} color="var(--accent-primary)" /> Năng Suất Công Việc (14 ngày)
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Xem chi tiết &rarr;</span>
               </div>
@@ -653,7 +669,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>{taskData.completionRate}%</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Đã xong:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Đã xong (14 ngày):</span>
                   <span style={{ color: 'var(--accent-success)', fontWeight: 600 }}>{taskData.completedTasks} / {taskData.totalTasks} tasks</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
