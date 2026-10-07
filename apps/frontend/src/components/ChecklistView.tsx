@@ -45,7 +45,7 @@ interface KanbanColumnConfig {
 const KANBAN_COLUMNS: KanbanColumnConfig[] = [
   { id: 'TODO', title: 'To Do', badgeColor: '#15803d' },
   { id: 'IN_PROGRESS', title: 'In Progress', badgeColor: '#d97706' },
-  { id: 'ARCHIVED', title: 'In Review (after push code)', badgeColor: '#0284c7' },
+  { id: 'ARCHIVED', title: 'Lưu trữ (Archived)', badgeColor: '#64748b' },
   { id: 'COMPLETED', title: 'Done', badgeColor: '#16a34a' }
 ];
 
@@ -1158,7 +1158,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                   >
                     <option value="TODO">📋 To Do</option>
                     <option value="IN_PROGRESS">⚡ In Progress</option>
-                    <option value="ARCHIVED">🔍 In Review (after push code)</option>
+                    <option value="ARCHIVED">📦 Lưu trữ (Archived)</option>
                     <option value="COMPLETED">✅ Done</option>
                   </select>
                 </div>
