@@ -282,7 +282,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       {/* Header Section */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2 style={{ fontSize: '1.4rem', color: 'var(--text-main)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Wallet size={24} color="var(--accent-primary)" /> Quản Lý Thu Chi Theo Khung Giờ
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -311,7 +311,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#fff',
+                color: 'var(--text-main)',
                 fontFamily: 'var(--font-family)',
                 fontSize: '0.85rem',
                 outline: 'none',
@@ -364,7 +364,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
               Tổng Thu Nhập
             </span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-success)' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(21, 128, 61, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-success)' }}>
               <ArrowUpRight size={18} />
             </div>
           </div>
@@ -381,7 +381,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
               Tổng Chi Tiêu
             </span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-danger)' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-danger)' }}>
               <ArrowDownRight size={18} />
             </div>
           </div>
@@ -398,11 +398,11 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
               Cân Đối Ròng (Thu - Chi)
             </span>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(21, 128, 61, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
               <DollarSign size={18} />
             </div>
           </div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: summary.balance >= 0 ? '#fff' : 'var(--accent-warning)' }}>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: summary.balance >= 0 ? 'var(--text-main)' : 'var(--accent-warning)' }}>
             {summary.balance > 0 ? `+${formatVND(summary.balance)}` : formatVND(summary.balance)}
           </div>
           <div style={{ fontSize: '0.75rem', color: summary.balance >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)', marginTop: '0.25rem', fontWeight: 500 }}>
@@ -414,7 +414,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       {/* 4 Time Slot Breakdown Cards */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <h3 style={{ fontSize: '1rem', color: '#fff', fontWeight: 600 }}>
+          <h3 style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: 600 }}>
             Chi Tiết Thu Chi Theo 4 Khoảng Thời Gian Trong Ngày
           </h3>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -440,9 +440,9 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                   cursor: 'pointer',
                   position: 'relative',
                   border: isSelected ? `2px solid ${config.color}` : '1px solid var(--border-color)',
-                  background: isSelected ? 'rgba(31, 41, 55, 0.95)' : 'var(--bg-card)',
+                  background: isSelected ? 'rgba(21, 128, 61, 0.08)' : 'var(--bg-card)',
                   transform: isSelected ? 'translateY(-2px)' : 'none',
-                  boxShadow: isSelected ? `0 8px 24px rgba(0, 0, 0, 0.4), 0 0 15px ${config.color}33` : 'var(--shadow-card)'
+                  boxShadow: isSelected ? `0 8px 24px rgba(20, 83, 45, 0.15), 0 0 15px ${config.color}22` : 'var(--shadow-card)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
@@ -460,7 +460,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                       <Icon size={18} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff' }}>{config.label}</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>{config.label}</div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{config.timeRange}</div>
                     </div>
                   </div>
@@ -472,7 +472,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                     }}
                     title={`Thêm giao dịch vào ${config.label}`}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.08)',
+                      background: 'rgba(20, 83, 45, 0.08)',
                       border: 'none',
                       borderRadius: '50%',
                       width: '26px',
@@ -480,7 +480,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#fff',
+                      color: 'var(--text-main)',
                       cursor: 'pointer'
                     }}
                   >
@@ -531,7 +531,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
               flex: 1,
               background: 'transparent',
               border: 'none',
-              color: '#fff',
+              color: 'var(--text-main)',
               fontSize: '0.85rem',
               outline: 'none'
             }}
@@ -577,7 +577,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
         {displayTransactions.length === 0 ? (
           <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
             <Wallet size={40} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
-            <p style={{ fontSize: '1rem', color: '#fff', marginBottom: '0.5rem' }}>Chưa có giao dịch nào trong khoảng thời gian này</p>
+            <p style={{ fontSize: '1rem', color: 'var(--text-main)', marginBottom: '0.5rem', fontWeight: 600 }}>Chưa có giao dịch nào trong khoảng thời gian này</p>
             <p style={{ fontSize: '0.85rem' }}>Nhấn "+ Thêm Giao Dịch" để ghi chép các khoản thu chi trong ngày</p>
             <button
               onClick={() => handleOpenCreate()}
@@ -612,7 +612,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                     width: '40px',
                     height: '40px',
                     borderRadius: 'var(--radius-md)',
-                    background: isIncome ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    background: isIncome ? 'rgba(21, 128, 61, 0.12)' : 'rgba(239, 68, 68, 0.12)',
                     color: isIncome ? 'var(--accent-success)' : 'var(--accent-danger)',
                     display: 'flex',
                     alignItems: 'center',
@@ -624,7 +624,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>
                         {tx.title}
                       </span>
                       <span className="tag-pill" style={{ fontSize: '0.7rem' }}>
@@ -642,7 +642,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                       </span>
                       {tx.note && (
                         <>
-                          <span>&bull;</span>
+                           <span>&bull;</span>
                           <span style={{ fontStyle: 'italic', color: 'var(--text-dim)' }}>{tx.note}</span>
                         </>
                       )}
@@ -694,7 +694,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '540px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 600 }}>
+              <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: 700 }}>
                 {editingItem ? 'Chỉnh Sửa Giao Dịch Thu Chi' : 'Thêm Giao Dịch Thu Chi Mới'}
               </h3>
               <button onClick={handleCloseModal} className="btn-icon">
@@ -718,7 +718,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Type Switcher: Chi Tiêu vs Thu Nhập */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(0, 0, 0, 0.3)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(20, 83, 45, 0.06)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -730,7 +730,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                     border: 'none',
                     borderRadius: 'var(--radius-sm)',
                     background: formType === 'EXPENSE' ? 'var(--accent-danger)' : 'transparent',
-                    color: '#fff',
+                    color: formType === 'EXPENSE' ? '#fff' : 'var(--text-muted)',
                     fontWeight: 600,
                     fontSize: '0.85rem',
                     cursor: 'pointer',
@@ -755,7 +755,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                     border: 'none',
                     borderRadius: 'var(--radius-sm)',
                     background: formType === 'INCOME' ? 'var(--accent-success)' : 'transparent',
-                    color: '#fff',
+                    color: formType === 'INCOME' ? '#fff' : 'var(--text-muted)',
                     fontWeight: 600,
                     fontSize: '0.85rem',
                     cursor: 'pointer',
@@ -849,14 +849,14 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                           padding: '0.6rem 0.75rem',
                           borderRadius: 'var(--radius-md)',
                           border: isSelected ? `2px solid ${config.color}` : '1px solid var(--border-color)',
-                          background: isSelected ? `${config.color}15` : 'rgba(0, 0, 0, 0.2)',
+                          background: isSelected ? `${config.color}15` : 'var(--bg-secondary)',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease'
                         }}
                       >
                         <Icon size={16} color={config.color} />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isSelected ? '#fff' : 'var(--text-muted)' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isSelected ? 'var(--text-main)' : 'var(--text-muted)' }}>
                             {config.label}
                           </span>
                           <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>

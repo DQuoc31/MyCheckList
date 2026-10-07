@@ -996,16 +996,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       left: `calc(${item.left}% + 3px)`,
                       width: `calc(${item.width}% - 6px)`,
                       borderRadius: '8px',
-                      background: `linear-gradient(135deg, ${color}33, rgba(15, 23, 42, 0.94))`,
+                      background: `linear-gradient(135deg, ${color}18, #ffffff)`,
                       borderLeft: `4px solid ${color}`,
-                      borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderTop: '1px solid var(--border-color)',
+                      borderRight: '1px solid var(--border-color)',
+                      borderBottom: '1px solid var(--border-color)',
                       padding: isShort ? '3px 8px' : '6px 10px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'flex-start',
-                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.35)',
+                      boxShadow: 'var(--shadow-card)',
                       zIndex: 10,
                       cursor: 'pointer',
                       overflow: 'hidden',
@@ -1041,8 +1041,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             fontSize: '0.62rem',
                             padding: '1px 4px',
                             borderRadius: '4px',
-                            background: 'rgba(167, 139, 250, 0.25)',
-                            color: '#c4b5fd',
+                            background: 'rgba(21, 128, 61, 0.15)',
+                            color: 'var(--accent-primary)',
                             fontWeight: 600,
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -1056,7 +1056,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <span style={{
                           fontSize: '0.825rem',
                           fontWeight: 700,
-                          color: '#fff',
+                          color: 'var(--text-main)',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis'
@@ -1072,11 +1072,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           alignItems: 'center',
                           gap: '2px',
                           flexShrink: 0,
-                          background: 'rgba(0, 0, 0, 0.35)',
-                          backdropFilter: 'blur(4px)',
+                          background: 'var(--bg-secondary)',
                           borderRadius: '6px',
                           padding: '1px 3px',
-                          border: '1px solid rgba(255, 255, 255, 0.08)'
+                          border: '1px solid var(--border-color)'
                         }}
                         onClick={e => e.stopPropagation()}
                       >
@@ -1154,25 +1153,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       width: `calc(${item.width}% - 6px)`,
                       borderRadius: '8px',
                       background: isDone 
-                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(15, 23, 42, 0.94))'
+                        ? 'linear-gradient(135deg, rgba(21, 128, 61, 0.08), #ffffff)'
                         : isOverdue 
-                          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.32), rgba(15, 23, 42, 0.96))'
+                          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), #ffffff)'
                           : isDueSoon
-                            ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.32), rgba(15, 23, 42, 0.96))'
-                            : 'linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(15, 23, 42, 0.94))',
+                            ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), #ffffff)'
+                            : 'linear-gradient(135deg, rgba(21, 128, 61, 0.08), #ffffff)',
                       borderLeft: `4px solid ${isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : pColor}`,
-                      borderTop: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.4)' : isDueSoon ? 'rgba(245, 158, 11, 0.5)' : 'rgba(255, 255, 255, 0.12)'}`,
-                      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderTop: '1px solid var(--border-color)',
+                      borderRight: '1px solid var(--border-color)',
+                      borderBottom: '1px solid var(--border-color)',
                       padding: isShort ? '3px 8px' : '6px 10px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'flex-start',
-                      boxShadow: isOverdue 
-                        ? '0 4px 16px rgba(239, 68, 68, 0.3)' 
-                        : isDueSoon 
-                          ? '0 4px 18px rgba(245, 158, 11, 0.3)' 
-                          : '0 4px 14px rgba(0, 0, 0, 0.35)',
+                      boxShadow: 'var(--shadow-card)',
                       zIndex: 12,
                       cursor: 'pointer',
                       overflow: 'hidden',
@@ -1200,7 +1195,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            color: isDone ? '#10b981' : isOverdue ? '#f87171' : isDueSoon ? '#fbbf24' : '#cbd5e1',
+                            color: isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#d97706' : 'var(--text-muted)',
                             flexShrink: 0
                           }}
                           title={isDone ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
@@ -1212,7 +1207,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           fontSize: '0.62rem',
                           padding: '1px 5px',
                           borderRadius: '4px',
-                          background: isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#6366f1',
+                          background: isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--accent-primary)',
                           color: '#fff',
                           fontWeight: 800,
                           letterSpacing: '0.02em',
@@ -1241,7 +1236,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <span style={{
                           fontSize: '0.825rem',
                           fontWeight: 700,
-                          color: isDone ? 'var(--text-muted)' : '#fff',
+                          color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                           textDecoration: isDone ? 'line-through' : 'none',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
@@ -1440,14 +1435,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         padding: '0.75rem 0.85rem',
                         borderRadius: 'var(--radius-md)',
                         background: isDone 
-                          ? 'rgba(16, 185, 129, 0.12)' 
+                          ? 'rgba(21, 128, 61, 0.08)' 
                           : isOverdue 
-                            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(15, 23, 42, 0.85))' 
+                            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), #ffffff)' 
                             : isDueSoon
-                              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(15, 23, 42, 0.85))'
-                              : 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(15, 23, 42, 0.85))',
+                              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), #ffffff)'
+                              : 'linear-gradient(135deg, rgba(21, 128, 61, 0.08), #ffffff)',
                         borderLeft: `4px solid ${isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : pColor}`,
-                        borderTop: isDueSoon ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid rgba(255, 255, 255, 0.08)',
+                        borderTop: isDueSoon ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid var(--border-color)',
+                        borderRight: '1px solid var(--border-color)',
+                        borderBottom: '1px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -1461,7 +1458,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             fontSize: '0.65rem',
                             padding: '1px 5px',
                             borderRadius: '4px',
-                            background: isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#6366f1',
+                            background: isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--accent-primary)',
                             color: '#fff',
                             fontWeight: 800,
                             display: 'inline-flex',
@@ -1481,7 +1478,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <h5 style={{
                           fontSize: '0.9rem',
                           fontWeight: 600,
-                          color: isDone ? 'var(--text-muted)' : '#fff',
+                          color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                           textDecoration: isDone ? 'line-through' : 'none',
                           wordBreak: 'break-word'
                         }}>
@@ -1513,9 +1510,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       style={{
                         padding: '0.75rem 0.85rem',
                         borderRadius: 'var(--radius-md)',
-                        background: `linear-gradient(135deg, ${color}22, rgba(15, 23, 42, 0.85))`,
+                        background: `linear-gradient(135deg, ${color}15, #ffffff)`,
                         borderLeft: `4px solid ${color}`,
-                        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                        borderTop: '1px solid var(--border-color)',
+                        borderRight: '1px solid var(--border-color)',
+                        borderBottom: '1px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -1529,7 +1528,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             {getCategoryLabel(evt.category)}
                           </span>
                           {evt.isRecurring && (
-                            <span style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.25)', color: '#c4b5fd', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(21, 128, 61, 0.15)', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                               <Repeat size={9} /> {evt.recurrencePattern === 'DAILY' ? 'Ngày' : evt.recurrencePattern === 'MONTHLY' ? 'Tháng' : 'Tuần'}
                             </span>
                           )}
@@ -1537,7 +1536,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             <Clock size={11} /> {formatTime(evt.startTime)} - {formatTime(evt.endTime)}
                           </span>
                         </div>
-                        <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+                        <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', wordBreak: 'break-word' }}>
                           {evt.title}
                         </h5>
                         {evt.description && (
@@ -1662,20 +1661,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             padding: '0.45rem 0.55rem',
                             borderRadius: '6px',
                             background: isDone 
-                              ? 'rgba(16, 185, 129, 0.15)' 
+                              ? 'rgba(21, 128, 61, 0.08)' 
                               : isOverdue 
-                                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.28), rgba(15, 23, 42, 0.9))' 
+                                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), #ffffff)' 
                                 : isDueSoon
-                                  ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(15, 23, 42, 0.9))'
-                                  : 'linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(15, 23, 42, 0.9))',
+                                  ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), #ffffff)'
+                                  : 'linear-gradient(135deg, rgba(21, 128, 61, 0.08), #ffffff)',
                             borderLeft: `3.5px solid ${isDone ? '#10b981' : isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : pColor}`,
-                            borderTop: isDueSoon ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid rgba(255,255,255,0.08)',
-                            borderRight: '1px solid rgba(255,255,255,0.04)',
-                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                            borderTop: isDueSoon ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid var(--border-color)',
+                            borderRight: '1px solid var(--border-color)',
+                            borderBottom: '1px solid var(--border-color)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '0.2rem',
-                            boxShadow: isDueSoon ? '0 2px 8px rgba(245, 158, 11, 0.25)' : '0 2px 6px rgba(0,0,0,0.3)',
+                            boxShadow: isDueSoon ? '0 2px 8px rgba(245, 158, 11, 0.15)' : 'var(--shadow-card)',
                             cursor: 'pointer',
                             position: 'relative',
                             overflow: 'hidden'
@@ -1684,8 +1683,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           title={`🎯 Hạn chót: ${t.title} (${t.dueDate ? formatTime(t.dueDate) : ''}) - Nhấn để xem chi tiết`}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '3px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', color: isOverdue ? '#fca5a5' : isDueSoon ? '#fde68a' : '#fbbf24', fontWeight: 700 }}>
-                              <Target size={10} style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#818cf8', flexShrink: 0 }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.68rem', color: isOverdue ? '#ef4444' : isDueSoon ? '#d97706' : 'var(--accent-primary)', fontWeight: 700 }}>
+                              <Target size={10} style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : 'var(--accent-primary)', flexShrink: 0 }} />
                               <span>{isDueSoon ? '🔥 ' : ''}{t.dueDate ? formatTime(t.dueDate) : 'Hạn chót'}</span>
                             </div>
 
@@ -1702,7 +1701,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           <div style={{
                             fontSize: '0.8rem',
                             fontWeight: 600,
-                            color: isDone ? 'var(--text-muted)' : '#fff',
+                            color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                             textDecoration: isDone ? 'line-through' : 'none',
                             lineHeight: 1.3,
                             whiteSpace: 'nowrap',
@@ -1726,15 +1725,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           style={{
                             padding: '0.45rem 0.55rem',
                             borderRadius: '6px',
-                            background: `linear-gradient(135deg, ${color}22, rgba(15, 23, 42, 0.85))`,
+                            background: `linear-gradient(135deg, ${color}15, #ffffff)`,
                             borderLeft: `3.5px solid ${color}`,
-                            borderTop: '1px solid rgba(255,255,255,0.06)',
-                            borderRight: '1px solid rgba(255,255,255,0.04)',
-                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                            borderTop: '1px solid var(--border-color)',
+                            borderRight: '1px solid var(--border-color)',
+                            borderBottom: '1px solid var(--border-color)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '0.2rem',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
+                            boxShadow: 'var(--shadow-card)',
                             cursor: 'pointer',
                             position: 'relative',
                             overflow: 'hidden'
@@ -1749,7 +1748,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               <span>{formatTime(evt.startTime)} - {formatTime(evt.endTime)}</span>
                               {evt.isRecurring && (
                                 <span title="Lặp lại tự động" style={{ display: 'inline-flex' }}>
-                                  <Repeat size={9} style={{ color: '#a78bfa', flexShrink: 0 }} />
+                                  <Repeat size={9} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
                                 </span>
                               )}
                             </div>
@@ -1758,14 +1757,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             <div className="week-card-actions" style={{ display: 'flex', alignItems: 'center', gap: '2px' }} onClick={e => e.stopPropagation()}>
                               <button
                                 onClick={(e) => handleOpenEditModal(evt, e)}
-                                style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: '1px' }}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '1px' }}
                                 title="Sửa"
                               >
                                 <Edit3 size={11} />
                               </button>
                               <button
                                 onClick={(e) => promptDeleteEvent(evt, e)}
-                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '1px' }}
+                                style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', cursor: 'pointer', padding: '1px' }}
                                 title="Xóa"
                               >
                                 <Trash2 size={11} />
@@ -1777,7 +1776,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           <div style={{
                             fontSize: '0.8rem',
                             fontWeight: 600,
-                            color: '#fff',
+                            color: 'var(--text-main)',
                             lineHeight: 1.3,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -2059,12 +2058,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       padding: '0.75rem 0.85rem',
                       borderRadius: 'var(--radius-md)',
                       background: isDone 
-                        ? 'rgba(16, 185, 129, 0.12)' 
+                        ? 'rgba(21, 128, 61, 0.08)' 
                         : isOverdue 
-                          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(15, 23, 42, 0.85))' 
-                          : 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(15, 23, 42, 0.85))',
+                          ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), #ffffff)' 
+                          : 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), #ffffff)',
                       borderLeft: `4px solid ${isDone ? '#10b981' : isOverdue ? '#ef4444' : pColor}`,
-                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderTop: '1px solid var(--border-color)',
+                      borderRight: '1px solid var(--border-color)',
+                      borderBottom: '1px solid var(--border-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -2090,14 +2091,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', background: `${pColor}33`, color: pColor, fontWeight: 700 }}>
                           {getPriorityLabel(t.priority)}
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: isOverdue ? '#fca5a5' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: isOverdue ? '#ef4444' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                           <Clock size={11} /> Hạn: {t.dueDate ? formatTime(t.dueDate) : ''}
                         </span>
                       </div>
                       <h5 style={{
                         fontSize: '0.9rem',
                         fontWeight: 600,
-                        color: isDone ? 'var(--text-muted)' : '#fff',
+                        color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                         textDecoration: isDone ? 'line-through' : 'none',
                         wordBreak: 'break-word'
                       }}>
@@ -2129,9 +2130,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     style={{
                       padding: '0.75rem 0.85rem',
                       borderRadius: 'var(--radius-md)',
-                      background: `linear-gradient(135deg, ${color}22, rgba(15, 23, 42, 0.85))`,
+                      background: `linear-gradient(135deg, ${color}15, #ffffff)`,
                       borderLeft: `4px solid ${color}`,
-                      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderTop: '1px solid var(--border-color)',
+                      borderRight: '1px solid var(--border-color)',
+                      borderBottom: '1px solid var(--border-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -2145,7 +2148,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           {getCategoryLabel(evt.category)}
                         </span>
                         {evt.isRecurring && (
-                          <span style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(167, 139, 250, 0.25)', color: '#c4b5fd', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                          <span style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px', background: 'rgba(21, 128, 61, 0.15)', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                             <Repeat size={9} /> {evt.recurrencePattern === 'DAILY' ? 'Ngày' : evt.recurrencePattern === 'MONTHLY' ? 'Tháng' : 'Tuần'}
                           </span>
                         )}
@@ -2153,7 +2156,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           <Clock size={11} /> {formatTime(evt.startTime)} - {formatTime(evt.endTime)}
                         </span>
                       </div>
-                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', wordBreak: 'break-word' }}>
+                      <h5 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', wordBreak: 'break-word' }}>
                         {evt.title}
                       </h5>
                     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ITask, Priority, TaskStatus } from '@mychecklist/shared';
 import { 
   CheckSquare, 
@@ -14,10 +14,16 @@ import {
   X,
   AlertTriangle,
   CheckCircle2,
-  PlayCircle,
-  Archive,
   ListTodo,
-  Calendar
+  Calendar,
+  LayoutGrid,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Flame,
+  ArrowUp,
+  ArrowDown,
+  Equal
 } from 'lucide-react';
 import { TaskAPI } from '../services/api';
 
@@ -28,18 +34,42 @@ interface ChecklistViewProps {
   onCloseCreateModal: () => void;
 }
 
+type ViewMode = 'board' | 'list';
+
+interface KanbanColumnConfig {
+  id: TaskStatus;
+  title: string;
+  badgeColor: string;
+}
+
+const KANBAN_COLUMNS: KanbanColumnConfig[] = [
+  { id: 'TODO', title: 'To Do', badgeColor: '#15803d' },
+  { id: 'IN_PROGRESS', title: 'In Progress', badgeColor: '#d97706' },
+  { id: 'ARCHIVED', title: 'In Review (after push code)', badgeColor: '#0284c7' },
+  { id: 'COMPLETED', title: 'Done', badgeColor: '#16a34a' }
+];
+
 export const ChecklistView: React.FC<ChecklistViewProps> = ({
   tasks,
   onRefresh,
   showCreateModal,
   onCloseCreateModal
 }) => {
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [viewMode, setViewMode] = useState<ViewMode>('board');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<string>('ALL');
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>('ALL');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Record<string, boolean>>({});
+
+  // Drag and Drop States
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
 
   // Modal states
   const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ITask | null>(null);
+  const [defaultCreateStatus, setDefaultCreateStatus] = useState<TaskStatus>('TODO');
   const isModalVisible = showCreateModal || isLocalModalOpen;
 
   // Custom Delete Confirm Popup State
@@ -80,8 +110,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         hour: '2-digit',
         minute: '2-digit',
         day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+        month: '2-digit'
       });
     } catch {
       return isoString;
@@ -103,7 +132,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
       const dueTime = new Date(task.dueDate).getTime();
       const diffMs = dueTime - Date.now();
       if (diffMs < 0) return 'OVERDUE';
-      if (diffMs <= 24 * 60 * 60 * 1000) return 'DUE_SOON'; // Dưới 1 ngày (24 giờ)
+      if (diffMs <= 24 * 60 * 60 * 1000) return 'DUE_SOON';
       return 'NORMAL';
     } catch {
       return 'NONE';
@@ -117,10 +146,10 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
       const totalMinutes = Math.floor(diffMs / 60000);
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
-      if (hours === 0) return `Còn ${minutes} phút`;
+      if (hours === 0) return `Còn ${minutes}p`;
       if (hours < 24) return `Còn ${hours}h ${minutes}p`;
       const days = Math.floor(hours / 24);
-      return `Còn ${days} ngày`;
+      return `Còn ${days}d`;
     } catch {
       return '';
     }
@@ -150,12 +179,13 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     setIsLocalModalOpen(true);
   };
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (initialStatus: TaskStatus = 'TODO') => {
     setEditingTask(null);
+    setDefaultCreateStatus(initialStatus);
     setTaskTitle('');
     setTaskDesc('');
     setTaskPriority('MEDIUM');
-    setTaskStatus('TODO');
+    setTaskStatus(initialStatus);
     setTaskDueDate('');
     setTaskTags('');
     setTaskSubItems(['']);
@@ -163,8 +193,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
   };
 
   // Quick Task Status update
-  const handleUpdateStatus = async (taskId: string, newStatus: TaskStatus, e?: React.MouseEvent | React.ChangeEvent<HTMLSelectElement>) => {
-    if (e && 'stopPropagation' in e) e.stopPropagation();
+  const handleUpdateStatus = async (taskId: string, newStatus: TaskStatus) => {
     try {
       await TaskAPI.update(taskId, { status: newStatus });
       onRefresh();
@@ -249,7 +278,6 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
 
       const parsedDueDate = taskDueDate ? new Date(taskDueDate).toISOString() : undefined;
 
-      // Auto-set to ARCHIVED if user enters an overdue deadline and status was TODO/IN_PROGRESS
       let finalStatus = taskStatus;
       if (parsedDueDate && new Date(parsedDueDate).getTime() < Date.now() && (finalStatus === 'TODO' || finalStatus === 'IN_PROGRESS')) {
         finalStatus = 'ARCHIVED';
@@ -259,7 +287,6 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
         const taskId = editingTask.id || editingTask._id;
         if (!taskId) throw new Error('Không tìm thấy ID task');
 
-        // Preserve existing subtask completion states if titles match
         const existingChecklist = editingTask.checklist || [];
         const mergedChecklist = taskSubItems
           .filter(item => item.trim().length > 0)
@@ -301,455 +328,764 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
     }
   };
 
-  const effectiveStatus = (task: ITask): TaskStatus => {
-    if (task.status === 'COMPLETED') return 'COMPLETED';
-    if (isTaskOverdue(task)) return 'ARCHIVED';
-    return task.status || 'TODO';
+  // Drag and Drop Handlers
+  const handleDragStart = (taskId: string, e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', taskId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedTaskId(taskId);
   };
 
-  const filteredTasks = tasks.filter(task => {
-    if (filterStatus === 'ALL') return true;
-    const effStatus = effectiveStatus(task);
-    return effStatus === filterStatus;
-  });
+  const handleDragOver = (columnStatus: TaskStatus, e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverColumn !== columnStatus) {
+      setDragOverColumn(columnStatus);
+    }
+  };
 
-  const getPriorityBadge = (priority: Priority) => {
+  const handleDragLeave = (columnStatus: TaskStatus, e: React.DragEvent) => {
+    // Only reset if leaving the column container entirely
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    if (dragOverColumn === columnStatus) {
+      setDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = async (columnStatus: TaskStatus, e: React.DragEvent) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
+    setDragOverColumn(null);
+    setDraggedTaskId(null);
+
+    if (!taskId) return;
+
+    const task = tasks.find(t => (t.id === taskId || t._id === taskId));
+    if (!task || task.status === columnStatus) return;
+
+    // Optimistically update & trigger API call
+    await handleUpdateStatus(taskId, columnStatus);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
+  };
+
+  // Extract unique tags for filter
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach(t => (t.tags || []).forEach(tag => set.add(tag)));
+    return Array.from(set);
+  }, [tasks]);
+
+  // Filter tasks based on search, priority, tag
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      // Search text query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = (task.title || '').toLowerCase().includes(q);
+        const matchDesc = (task.description || '').toLowerCase().includes(q);
+        const matchTags = (task.tags || []).some(t => t.toLowerCase().includes(q));
+        if (!matchTitle && !matchDesc && !matchTags) return false;
+      }
+
+      // Priority filter
+      if (selectedPriorityFilter !== 'ALL' && task.priority !== selectedPriorityFilter) {
+        return false;
+      }
+
+      // Tag filter
+      if (selectedTagFilter !== 'ALL' && !(task.tags || []).includes(selectedTagFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [tasks, searchQuery, selectedPriorityFilter, selectedTagFilter]);
+
+  // Group tasks by status for Kanban Board
+  const columnsData = useMemo(() => {
+    const map: Record<TaskStatus, ITask[]> = {
+      TODO: [],
+      IN_PROGRESS: [],
+      ARCHIVED: [],
+      COMPLETED: []
+    };
+
+    filteredTasks.forEach(task => {
+      let st: TaskStatus = task.status || 'TODO';
+      if (!map[st]) st = 'TODO';
+      map[st].push(task);
+    });
+
+    return map;
+  }, [filteredTasks]);
+
+  // Render priority icon (like Jira/Linear: =, ↑, ⚡)
+  const renderPriorityIcon = (priority: Priority) => {
     switch (priority) {
-      case 'URGENT': return <span className="badge badge-urgent">Gấp (Urgent)</span>;
-      case 'HIGH': return <span className="badge badge-high">Cao (High)</span>;
-      case 'MEDIUM': return <span className="badge badge-medium">Trung bình</span>;
-      default: return <span className="badge badge-low">Thấp (Low)</span>;
-    }
-  };
-
-  const getStatusColor = (status?: TaskStatus) => {
-    switch (status) {
-      case 'IN_PROGRESS': return '#f59e0b';
-      case 'COMPLETED': return '#10b981';
-      case 'ARCHIVED': return '#94a3b8';
-      case 'TODO':
-      default: return '#818cf8';
-    }
-  };
-
-  const getStatusBg = (status?: TaskStatus) => {
-    switch (status) {
-      case 'IN_PROGRESS': return 'rgba(245, 158, 11, 0.15)';
-      case 'COMPLETED': return 'rgba(16, 185, 129, 0.15)';
-      case 'ARCHIVED': return 'rgba(148, 163, 184, 0.15)';
-      case 'TODO':
-      default: return 'rgba(99, 102, 241, 0.15)';
-    }
-  };
-
-  const getStatusBorder = (status?: TaskStatus) => {
-    switch (status) {
-      case 'IN_PROGRESS': return '1px solid rgba(245, 158, 11, 0.35)';
-      case 'COMPLETED': return '1px solid rgba(16, 185, 129, 0.35)';
-      case 'ARCHIVED': return '1px solid rgba(148, 163, 184, 0.35)';
-      case 'TODO':
-      default: return '1px solid rgba(99, 102, 241, 0.35)';
+      case 'URGENT':
+        return <span title="Khẩn cấp (Urgent)" style={{ display: 'inline-flex', alignItems: 'center' }}><Flame size={14} style={{ color: '#ef4444' }} /></span>;
+      case 'HIGH':
+        return <span title="Cao (High)" style={{ display: 'inline-flex', alignItems: 'center' }}><ArrowUp size={14} style={{ color: '#f97316' }} /></span>;
+      case 'MEDIUM':
+        return <span title="Trung bình (Medium)" style={{ display: 'inline-flex', alignItems: 'center' }}><Equal size={14} style={{ color: '#d97706' }} /></span>;
+      case 'LOW':
+      default:
+        return <span title="Thấp (Low)" style={{ display: 'inline-flex', alignItems: 'center' }}><ArrowDown size={14} style={{ color: '#64748b' }} /></span>;
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header & Filters */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minHeight: 'calc(100vh - 120px)' }}>
+      {/* Top Toolbar: Jira/Linear style header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '1rem'
+        gap: '0.85rem',
+        background: '#ffffff',
+        padding: '0.85rem 1.25rem',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-card)'
       }}>
-        <div>
-          <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ListTodo size={24} style={{ color: 'var(--accent-primary)' }} />
-            Danh Sách Checklist & Sub-tasks
-          </h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            Quản lý tiến độ, thời hạn deadline và trạng thái công việc
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Status Filter Tabs */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '0.35rem', 
-            background: 'rgba(0,0,0,0.3)', 
-            padding: '4px', 
-            borderRadius: 'var(--radius-md)',
-            overflowX: 'auto',
-            maxWidth: '100%'
+        {/* Left: Search & Filter Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap', flex: 1, minWidth: '280px' }}>
+          {/* Search Box */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '999px',
+            padding: '0.4rem 0.9rem',
+            minWidth: '220px',
+            maxWidth: '320px',
+            flex: 1
           }}>
-            {[
-              { id: 'ALL', label: 'Tất cả' },
-              { id: 'TODO', label: '📋 Cần làm' },
-              { id: 'IN_PROGRESS', label: '⚡ Đang làm' },
-              { id: 'COMPLETED', label: '✅ Đã xong' },
-              { id: 'ARCHIVED', label: '📦 Lưu trữ / Quá hạn' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterStatus(tab.id)}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  border: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  background: filterStatus === tab.id ? 'var(--accent-primary)' : 'transparent',
-                  color: filterStatus === tab.id ? '#fff' : 'var(--text-muted)',
-                  transition: 'all 0.2s ease'
-                }}
+            <Search size={15} style={{ color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              placeholder="Search board..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-main)',
+                fontSize: '0.85rem',
+                outline: 'none',
+                width: '100%'
+              }}
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')} 
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--text-muted)' }}
               >
-                {tab.label}
+                <X size={14} />
               </button>
-            ))}
+            )}
           </div>
 
+          {/* Filter Dropdown Toggle */}
+          <div style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
+                border: `1px solid ${selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                color: selectedPriorityFilter !== 'ALL' || selectedTagFilter !== 'ALL' ? 'var(--accent-primary)' : 'var(--text-main)',
+                padding: '0.42rem 0.85rem',
+                borderRadius: '8px',
+                fontSize: '0.825rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Filter size={14} />
+              <span>Filter</span>
+              <ChevronDown size={13} />
+            </button>
+
+            {showFilterDropdown && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  marginTop: '6px',
+                  background: '#ffffff',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.75rem',
+                  minWidth: '220px',
+                  zIndex: 40,
+                  boxShadow: 'var(--shadow-popover)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem'
+                }}
+              >
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                    Ưu tiên (Priority)
+                  </label>
+                  <select
+                    value={selectedPriorityFilter}
+                    onChange={e => setSelectedPriorityFilter(e.target.value)}
+                    className="form-input"
+                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
+                  >
+                    <option value="ALL">Tất cả mức độ</option>
+                    <option value="URGENT">🔥 Khẩn cấp (Urgent)</option>
+                    <option value="HIGH">↑ Cao (High)</option>
+                    <option value="MEDIUM">= Trung bình (Medium)</option>
+                    <option value="LOW">↓ Thấp (Low)</option>
+                  </select>
+                </div>
+
+                {allTags.length > 0 && (
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>
+                      Nhãn (Tag)
+                    </label>
+                    <select
+                      value={selectedTagFilter}
+                      onChange={e => setSelectedTagFilter(e.target.value)}
+                      className="form-input"
+                      style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem' }}
+                    >
+                      <option value="ALL">Tất cả nhãn</option>
+                      {allTags.map(tag => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '0.4rem', borderTop: '1px solid var(--border-color)' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPriorityFilter('ALL');
+                      setSelectedTagFilter('ALL');
+                      setShowFilterDropdown(false);
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-danger)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Đặt lại bộ lọc
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: View Mode Toggle & Primary Action */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          {/* View Mode Switcher */}
+          <div style={{
+            display: 'flex',
+            background: 'var(--bg-secondary)',
+            padding: '3px',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <button
+              type="button"
+              onClick={() => setViewMode('board')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '6px',
+                border: 'none',
+                background: viewMode === 'board' ? '#ffffff' : 'transparent',
+                color: viewMode === 'board' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                boxShadow: viewMode === 'board' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+              }}
+              title="Kanban Board View"
+            >
+              <LayoutGrid size={14} />
+              <span>Board</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '6px',
+                border: 'none',
+                background: viewMode === 'list' ? '#ffffff' : 'transparent',
+                color: viewMode === 'list' ? 'var(--accent-primary)' : 'var(--text-muted)',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+              }}
+              title="List View"
+            >
+              <ListTodo size={14} />
+              <span>List</span>
+            </button>
+          </div>
+
+          {/* Primary Create Button */}
           <button
-            onClick={handleOpenCreateModal}
+            onClick={() => handleOpenCreateModal('TODO')}
             className="btn btn-primary"
-            style={{ fontSize: '0.825rem', padding: '0.45rem 0.85rem', whiteSpace: 'nowrap' }}
+            style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}
           >
-            <Plus size={15} /> Thêm Task
+            <Plus size={16} />
+            <span>Tạo Task</span>
           </button>
         </div>
       </div>
 
-      {/* Task Cards List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {filteredTasks.length === 0 ? (
-          <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <AlertCircle size={40} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <p style={{ marginBottom: '0.75rem' }}>Chưa có task nào trong danh mục này.</p>
-            <button
-              onClick={handleOpenCreateModal}
-              className="btn btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '0.4rem 0.85rem' }}
-            >
-              <Plus size={14} /> Tạo task mới ngay
-            </button>
-          </div>
-        ) : (
-          filteredTasks.map(task => {
-            const taskId = task.id || task._id || '';
-            const checklist = task.checklist || [];
-            const completedCount = checklist.filter(c => c.completed).length;
-            const isCompleted = task.status === 'COMPLETED';
-            const progressPercent = checklist.length > 0 ? Math.round((completedCount / checklist.length) * 100) : (isCompleted ? 100 : 0);
-            const isExpanded = expandedTaskIds[taskId] ?? true;
-            const isOverdue = isTaskOverdue(task);
-            const urgency = getDeadlineUrgency(task);
-            const isDueSoon = urgency === 'DUE_SOON';
-            const effStatus = effectiveStatus(task);
+      {/* ========================================================================= */}
+      {/* 1. KANBAN BOARD VIEW (Drag & Drop Supported) */}
+      {/* ========================================================================= */}
+      {viewMode === 'board' ? (
+        <div 
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, minmax(260px, 1fr))',
+            gap: '1rem',
+            overflowX: 'auto',
+            paddingBottom: '1rem',
+            alignItems: 'flex-start'
+          }}
+        >
+          {KANBAN_COLUMNS.map((column) => {
+            const colTasks = columnsData[column.id] || [];
+            const isDragOver = dragOverColumn === column.id;
 
             return (
-              <div 
-                key={taskId} 
-                className="glass-card" 
-                style={{ 
-                  padding: '1.25rem', 
-                  position: 'relative',
-                  borderLeft: isCompleted 
-                    ? '4px solid #10b981' 
-                    : isOverdue 
-                      ? '4px solid #ef4444' 
-                      : isDueSoon 
-                        ? '4px solid #f59e0b' 
-                        : `4px solid ${getStatusColor(task.status)}`,
-                  background: isCompleted
-                    ? undefined
-                    : isOverdue
-                      ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(15, 23, 42, 0.95))'
-                      : isDueSoon
-                        ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(15, 23, 42, 0.95))'
-                        : undefined,
-                  border: isDueSoon
-                    ? '1px solid rgba(245, 158, 11, 0.35)'
-                    : isOverdue
-                      ? '1px solid rgba(239, 68, 68, 0.3)'
-                      : undefined,
-                  boxShadow: isDueSoon
-                    ? '0 4px 20px rgba(245, 158, 11, 0.18)'
-                    : isOverdue
-                      ? '0 4px 18px rgba(239, 68, 68, 0.15)'
-                      : undefined,
-                  opacity: isCompleted ? 0.85 : (isOverdue ? 0.9 : 1),
-                  transition: 'all 0.2s ease'
+              <div
+                key={column.id}
+                onDragOver={(e) => handleDragOver(column.id, e)}
+                onDragLeave={(e) => handleDragLeave(column.id, e)}
+                onDrop={(e) => handleDrop(column.id, e)}
+                style={{
+                  background: isDragOver ? 'rgba(21, 128, 61, 0.08)' : '#f4f7f5',
+                  border: isDragOver ? '2px dashed var(--accent-primary)' : '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '0.85rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem',
+                  minHeight: '520px',
+                  transition: 'all 0.15s ease',
+                  boxSizing: 'border-box'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                  {/* Left: Quick Completion Checkbox & Task Information */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', flex: 1, minWidth: 0 }}>
-                    {/* Main Task Checkbox Toggle */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleMainTaskComplete(task, e)}
-                      className="btn-icon"
-                      style={{ 
-                        padding: '2px', 
-                        marginTop: '2px', 
-                        color: isCompleted ? 'var(--accent-success)' : isDueSoon ? '#f59e0b' : 'var(--text-dim)',
-                        flexShrink: 0
-                      }}
-                      title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
-                    >
-                      {isCompleted ? <CheckSquare size={22} color="var(--accent-success)" /> : <Square size={22} />}
-                    </button>
+                {/* Column Header: Title & Task Count */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.2rem 0.35rem',
+                  marginBottom: '0.2rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <h3 style={{
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      color: 'var(--text-main)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.02em',
+                      margin: 0
+                    }}>
+                      {column.title}
+                    </h3>
+                    <span style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      background: 'rgba(0,0,0,0.05)',
+                      padding: '1px 6px',
+                      borderRadius: '999px'
+                    }}>
+                      {colTasks.length}
+                    </span>
+                  </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Priority, Status Selector, and Badges Row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                        {getPriorityBadge(task.priority)}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCreateModal(column.id)}
+                    className="btn-icon"
+                    title={`Thêm task vào ${column.title}`}
+                    style={{ padding: '3px', color: 'var(--text-muted)' }}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
 
-                        {/* Interactive Status Selector Dropdown (Clean, robust, no background glitches) */}
-                        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                          <select
-                            value={effStatus}
-                            onChange={(e) => handleUpdateStatus(taskId, e.target.value as TaskStatus, e)}
-                            style={{
-                              padding: '2px 24px 2px 8px',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              border: isOverdue 
-                                ? '1px solid rgba(239, 68, 68, 0.4)' 
-                                : isDueSoon 
-                                  ? '1px solid rgba(245, 158, 11, 0.45)' 
-                                  : getStatusBorder(task.status),
-                              background: isOverdue 
-                                ? 'rgba(239, 68, 68, 0.15)' 
-                                : isDueSoon 
-                                  ? 'rgba(245, 158, 11, 0.18)' 
-                                  : getStatusBg(task.status),
-                              color: isOverdue 
-                                ? '#f87171' 
-                                : isDueSoon 
-                                  ? '#fbbf24' 
-                                  : getStatusColor(task.status),
-                              outline: 'none',
-                              appearance: 'none',
-                              WebkitAppearance: 'none',
-                              MozAppearance: 'none'
-                            }}
-                            title="Nhấn để đổi trạng thái công việc"
-                          >
-                            <option value="TODO" style={{ background: '#0f172a', color: '#818cf8' }}>📋 Cần làm (TODO)</option>
-                            <option value="IN_PROGRESS" style={{ background: '#0f172a', color: '#f59e0b' }}>⚡ Đang làm (IN_PROGRESS)</option>
-                            <option value="COMPLETED" style={{ background: '#0f172a', color: '#10b981' }}>✅ Đã xong (COMPLETED)</option>
-                            <option value="ARCHIVED" style={{ background: '#0f172a', color: '#94a3b8' }}>📦 Lưu trữ (ARCHIVED)</option>
-                          </select>
-                          <ChevronDown 
-                            size={12} 
-                            style={{ 
-                              position: 'absolute', 
-                              right: '6px', 
-                              pointerEvents: 'none', 
-                              color: isOverdue ? '#f87171' : isDueSoon ? '#fbbf24' : getStatusColor(task.status) 
-                            }} 
-                          />
+                {/* Quick Add Dashed Button (Top of column, matching Jira screenshot) */}
+                <button
+                  type="button"
+                  onClick={() => handleOpenCreateModal(column.id)}
+                  style={{
+                    width: '100%',
+                    padding: '0.45rem',
+                    borderRadius: '8px',
+                    border: '1.5px dashed var(--border-color)',
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                    e.currentTarget.style.color = 'var(--accent-primary)';
+                    e.currentTarget.style.background = 'rgba(21, 128, 61, 0.05)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <Plus size={15} />
+                </button>
+
+                {/* Column Task Cards Stack */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', flex: 1 }}>
+                  {colTasks.map((task, idx) => {
+                    const taskId = task.id || task._id || '';
+                    const checklist = task.checklist || [];
+                    const completedCount = checklist.filter(c => c.completed).length;
+                    const isCompleted = task.status === 'COMPLETED';
+                    const isOverdue = isTaskOverdue(task);
+                    const urgency = getDeadlineUrgency(task);
+                    const isDueSoon = urgency === 'DUE_SOON';
+                    const isBeingDragged = draggedTaskId === taskId;
+                    const isExpanded = expandedTaskIds[taskId] ?? false;
+
+                    return (
+                      <div
+                        key={taskId}
+                        draggable
+                        onDragStart={(e) => handleDragStart(taskId, e)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => handleOpenEditModal(task)}
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '8px',
+                          border: isDueSoon
+                            ? '1px solid rgba(217, 119, 6, 0.4)'
+                            : isOverdue
+                              ? '1px solid rgba(220, 38, 38, 0.4)'
+                              : '1px solid var(--border-color)',
+                          boxShadow: isBeingDragged 
+                            ? '0 12px 28px rgba(0,0,0,0.15)' 
+                            : '0 1px 3px rgba(0,0,0,0.06)',
+                          padding: '0.85rem 0.95rem',
+                          cursor: 'grab',
+                          opacity: isBeingDragged ? 0.45 : 1,
+                          transform: isBeingDragged ? 'scale(1.02)' : 'none',
+                          transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.6rem'
+                        }}
+                        onMouseEnter={e => {
+                          if (!isBeingDragged) {
+                            e.currentTarget.style.boxShadow = '0 4px 14px rgba(20, 83, 45, 0.1)';
+                            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (!isBeingDragged) {
+                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                            e.currentTarget.style.borderColor = isDueSoon 
+                              ? 'rgba(217, 119, 6, 0.4)' 
+                              : isOverdue 
+                                ? 'rgba(220, 38, 38, 0.4)' 
+                                : 'var(--border-color)';
+                          }
+                        }}
+                      >
+                        {/* Tags Pill Row */}
+                        {(task.tags && task.tags.length > 0) && (
+                          <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                            {task.tags.map((tag, tIdx) => (
+                              <span 
+                                key={tIdx} 
+                                style={{
+                                  fontSize: '0.68rem',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  background: 'rgba(21, 128, 61, 0.08)',
+                                  color: 'var(--accent-primary)',
+                                  fontWeight: 600
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Title (Multi-line Jira Style) */}
+                        <div style={{
+                          fontSize: '0.88rem',
+                          fontWeight: 600,
+                          color: isCompleted ? 'var(--text-dim)' : 'var(--text-main)',
+                          textDecoration: isCompleted ? 'line-through' : 'none',
+                          lineHeight: 1.4,
+                          wordBreak: 'break-word'
+                        }}>
+                          {task.title}
                         </div>
 
-                        {/* Overdue Warning Badge */}
-                        {isOverdue && (
+                        {/* Description snippet if present */}
+                        {task.description && (
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--text-muted)',
+                            lineHeight: 1.35,
+                            maxHeight: '2.7em',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {task.description}
+                          </div>
+                        )}
+
+                        {/* Deadline badge if present */}
+                        {task.dueDate && (
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            fontSize: '0.72rem',
+                            fontWeight: isOverdue || isDueSoon ? 700 : 500,
+                            color: isOverdue ? '#dc2626' : isDueSoon ? '#d97706' : 'var(--text-muted)'
+                          }}>
+                            <Clock size={11} />
+                            <span>{formatDisplayDateTime(task.dueDate)}</span>
+                            {isDueSoon && <span>({formatRemainingTime(task.dueDate)})</span>}
+                          </div>
+                        )}
+
+                        {/* Subtasks summary bar if has subtasks */}
+                        {checklist.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-dim)' }}>
+                              <span>Subtasks</span>
+                              <span>{completedCount}/{checklist.length}</span>
+                            </div>
+                            <div className="progress-container" style={{ height: '4px' }}>
+                              <div 
+                                className="progress-fill" 
+                                style={{ 
+                                  width: `${Math.round((completedCount / checklist.length) * 100)}%`,
+                                  background: completedCount === checklist.length ? 'var(--accent-success)' : 'var(--accent-primary)'
+                                }} 
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bottom Row (Checkbox, Subtasks count, Priority) */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingTop: '0.45rem',
+                          borderTop: '1px solid rgba(0,0,0,0.05)',
+                          fontSize: '0.75rem'
+                        }}>
+                          {/* Left: Checkbox Button */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleMainTaskComplete(task, e)}
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', color: isCompleted ? 'var(--accent-success)' : 'var(--accent-primary)' }}
+                              title={isCompleted ? 'Hoàn thành' : 'Đánh dấu hoàn thành'}
+                            >
+                              {isCompleted ? <CheckSquare size={16} color="var(--accent-success)" /> : <Square size={16} color="#94a3b8" />}
+                            </button>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: isCompleted ? 'var(--accent-success)' : 'var(--text-muted)' }}>
+                              {isCompleted ? 'Xong' : 'Chưa xong'}
+                            </span>
+                          </div>
+
+                          {/* Right: Story Points / Subtasks + Priority Icon */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            {/* Checklist count / Story point badge */}
+                            {checklist.length > 0 && (
+                              <span 
+                                style={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  color: 'var(--text-muted)',
+                                  background: 'rgba(0,0,0,0.05)',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px'
+                                }}
+                                title={`${completedCount} trên ${checklist.length} sub-tasks đã xong`}
+                              >
+                                {checklist.length}
+                              </span>
+                            )}
+
+                            {/* Priority Icon (= / ↑ / ⚡) */}
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              {renderPriorityIcon(task.priority)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* 2. LIST VIEW (Alternative view mode) */
+        /* ========================================================================= */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {filteredTasks.length === 0 ? (
+            <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <AlertCircle size={40} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+              <p style={{ marginBottom: '0.75rem', color: 'var(--text-main)', fontWeight: 600 }}>Không tìm thấy công việc phù hợp.</p>
+              <button onClick={() => handleOpenCreateModal('TODO')} className="btn btn-primary">
+                <Plus size={15} /> Tạo task mới ngay
+              </button>
+            </div>
+          ) : (
+            filteredTasks.map((task, idx) => {
+              const taskId = task.id || task._id || '';
+              const checklist = task.checklist || [];
+              const completedCount = checklist.filter(c => c.completed).length;
+              const isCompleted = task.status === 'COMPLETED';
+              const isExpanded = expandedTaskIds[taskId] ?? false;
+              const isOverdue = isTaskOverdue(task);
+              const urgency = getDeadlineUrgency(task);
+              const isDueSoon = urgency === 'DUE_SOON';
+
+              return (
+                <div
+                  key={taskId}
+                  className="glass-card"
+                  style={{
+                    padding: '1rem 1.25rem',
+                    borderLeft: `4px solid ${isCompleted ? '#16a34a' : isOverdue ? '#dc2626' : isDueSoon ? '#d97706' : '#15803d'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleMainTaskComplete(task, e)}
+                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
+                      >
+                        {isCompleted ? <CheckSquare size={20} color="var(--accent-success)" /> : <Square size={20} color="#64748b" />}
+                      </button>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
                           <span style={{
                             fontSize: '0.68rem',
                             padding: '1px 6px',
                             borderRadius: '4px',
-                            background: 'rgba(239, 68, 68, 0.2)',
-                            color: '#f87171',
-                            border: '1px solid rgba(239, 68, 68, 0.4)',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '3px'
+                            background: 'rgba(21, 128, 61, 0.1)',
+                            color: 'var(--accent-primary)',
+                            fontWeight: 700
                           }}>
-                            <AlertTriangle size={11} /> Đã quá hạn
+                            {task.status}
                           </span>
-                        )}
-
-                        {/* Due Soon Warning Badge (< 24h) */}
-                        {isDueSoon && (
-                          <span style={{
-                            fontSize: '0.68rem',
-                            padding: '1px 7px',
-                            borderRadius: '4px',
-                            background: 'rgba(245, 158, 11, 0.22)',
-                            color: '#fbbf24',
-                            border: '1px solid rgba(245, 158, 11, 0.5)',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '3px'
-                          }}>
-                            <Clock size={11} style={{ color: '#f59e0b' }} />
-                            <span>Hạn chót &lt; 24h ({formatRemainingTime(task.dueDate!)})</span>
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 style={{ 
-                        fontSize: '1.1rem', 
-                        fontWeight: 600, 
-                        color: isCompleted ? 'rgba(255, 255, 255, 0.65)' : (isDueSoon ? '#fff' : '#fff'), 
-                        textDecoration: isCompleted ? 'line-through' : 'none',
-                        wordBreak: 'break-word',
-                        marginBottom: task.description ? '0.35rem' : '0.5rem'
-                      }}>
-                        {task.title}
-                      </h3>
-
-                      {task.description && (
-                        <p style={{ 
-                          fontSize: '0.85rem', 
-                          color: 'var(--text-muted)', 
-                          marginBottom: '0.65rem', 
-                          wordBreak: 'break-word',
-                          lineHeight: '1.4'
+                        </div>
+                        <h4 style={{
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          color: isCompleted ? 'var(--text-dim)' : 'var(--text-main)',
+                          textDecoration: isCompleted ? 'line-through' : 'none',
+                          margin: 0
                         }}>
-                          {task.description}
-                        </p>
-                      )}
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-                        {/* Deadline badge */}
-                        {task.dueDate && (
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '0.72rem',
-                            fontWeight: isDueSoon || isOverdue ? 700 : 600,
-                            background: isOverdue 
-                              ? 'rgba(239, 68, 68, 0.15)' 
-                              : isDueSoon 
-                                ? 'rgba(245, 158, 11, 0.22)' 
-                                : 'rgba(255, 255, 255, 0.05)',
-                            color: isOverdue 
-                              ? '#f87171' 
-                              : isDueSoon 
-                                ? '#fbbf24' 
-                                : 'var(--text-muted)',
-                            border: isOverdue 
-                              ? '1px solid rgba(239, 68, 68, 0.35)' 
-                              : isDueSoon 
-                                ? '1px solid rgba(245, 158, 11, 0.45)' 
-                                : '1px solid rgba(255, 255, 255, 0.08)'
-                          }}>
-                            <Calendar size={12} style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#818cf8' }} />
-                            <span>
-                              {isOverdue ? 'Hạn chót (Đã quá): ' : isDueSoon ? 'Hạn chót (Gấp): ' : 'Hạn chót: '}
-                              {formatDisplayDateTime(task.dueDate)}
-                            </span>
-                          </span>
-                        )}
-
-                        {(task.tags || []).map((tag, i) => (
-                          <span key={i} className="tag-pill">
-                            <Tag size={12} /> {tag}
-                          </span>
-                        ))}
-
-                        {task.estimatedMinutes && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Clock size={13} /> {task.estimatedMinutes} phút
-                          </span>
-                        )}
+                          {task.title}
+                        </h4>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right Actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
-                    <button 
-                      className="btn-icon" 
-                      onClick={(e) => handleOpenEditModal(task, e)}
-                      title="Chỉnh sửa task"
-                    >
-                      <Edit3 size={17} />
-                    </button>
-                    <button 
-                      className="btn-icon" 
-                      style={{ color: 'var(--accent-danger)' }} 
-                      onClick={(e) => promptDeleteTask(task, e)}
-                      title="Xóa task"
-                    >
-                      <Trash2 size={17} />
-                    </button>
-                    {checklist.length > 0 && (
-                      <button 
-                        className="btn-icon" 
-                        onClick={() => toggleExpand(taskId)}
-                        title={isExpanded ? 'Thu gọn sub-tasks' : 'Mở rộng sub-tasks'}
-                      >
-                        {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <button onClick={(e) => handleOpenEditModal(task, e)} className="btn-icon">
+                        <Edit3 size={16} />
                       </button>
-                    )}
+                      <button onClick={(e) => promptDeleteTask(task, e)} className="btn-icon" style={{ color: 'var(--accent-danger)' }}>
+                        <Trash2 size={16} />
+                      </button>
+                      {checklist.length > 0 && (
+                        <button onClick={() => toggleExpand(taskId)} className="btn-icon">
+                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Progress Bar & Sub-tasks section */}
-                {checklist.length > 0 && isExpanded && (
-                  <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
-                      <span>Tiến độ sub-tasks</span>
-                      <span style={{ fontWeight: 600, color: progressPercent === 100 ? 'var(--accent-success)' : '#fff' }}>
-                        {completedCount} / {checklist.length} ({progressPercent}%)
-                      </span>
-                    </div>
-                    <div className="progress-container" style={{ marginBottom: '0.85rem' }}>
-                      <div className="progress-fill" style={{ width: `${progressPercent}%`, background: progressPercent === 100 ? 'var(--accent-success)' : undefined }} />
-                    </div>
-
-                    {/* Sub-items list */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      {checklist.map(subItem => (
+                  {/* Sub-items in list view */}
+                  {checklist.length > 0 && isExpanded && (
+                    <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      {checklist.map(sub => (
                         <div
-                          key={subItem.id}
-                          onClick={(e) => handleToggleSubTask(taskId, subItem.id, e)}
+                          key={sub.id}
+                          onClick={(e) => handleToggleSubTask(taskId, sub.id, e)}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.65rem',
-                            padding: '0.55rem 0.75rem',
-                            background: subItem.completed ? 'rgba(16, 185, 129, 0.05)' : 'rgba(0, 0, 0, 0.2)',
-                            borderRadius: 'var(--radius-sm)',
+                            gap: '0.5rem',
+                            padding: '0.4rem 0.6rem',
+                            background: 'var(--bg-secondary)',
+                            borderRadius: '6px',
                             cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                            border: subItem.completed ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(255, 255, 255, 0.03)'
+                            fontSize: '0.825rem'
                           }}
                         >
-                          {subItem.completed ? (
-                            <CheckSquare size={17} color="var(--accent-success)" style={{ flexShrink: 0 }} />
-                          ) : (
-                            <Square size={17} color="var(--text-dim)" style={{ flexShrink: 0 }} />
-                          )}
-                          <span style={{
-                            fontSize: '0.85rem',
-                            color: subItem.completed ? 'var(--text-dim)' : 'var(--text-main)',
-                            textDecoration: subItem.completed ? 'line-through' : 'none',
-                            wordBreak: 'break-word'
-                          }}>
-                            {subItem.title}
+                          {sub.completed ? <CheckSquare size={15} color="var(--accent-success)" /> : <Square size={15} color="#64748b" />}
+                          <span style={{ textDecoration: sub.completed ? 'line-through' : 'none', color: sub.completed ? 'var(--text-dim)' : 'var(--text-main)' }}>
+                            {sub.title}
                           </span>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* Create / Edit Task Modal */}
       {isModalVisible && (
@@ -761,17 +1097,17 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  background: editingTask ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-                  border: `1px solid ${editingTask ? 'rgba(245, 158, 11, 0.35)' : 'rgba(99, 102, 241, 0.35)'}`,
+                  background: editingTask ? 'rgba(217, 119, 6, 0.12)' : 'rgba(21, 128, 61, 0.12)',
+                  border: `1px solid ${editingTask ? 'rgba(217, 119, 6, 0.25)' : 'rgba(21, 128, 61, 0.25)'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: editingTask ? '#f59e0b' : '#818cf8'
+                  color: editingTask ? '#b45309' : '#15803d'
                 }}>
                   {editingTask ? <Edit3 size={18} /> : <Plus size={18} />}
                 </div>
-                <h3 style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 700, margin: 0 }}>
-                  {editingTask ? 'Chỉnh Sửa Checklist Task' : 'Tạo Checklist Task Mới'}
+                <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: 800, margin: 0 }}>
+                  {editingTask ? 'Chỉnh Sửa Task' : 'Tạo Task Mới'}
                 </h3>
               </div>
 
@@ -783,12 +1119,12 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
             <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
-                  Tên công việc *
+                  Tên công việc / Issue Title *
                 </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Ví dụ: Xây dựng Monorepo với Express API"
+                  placeholder="Ví dụ: feat(Course): separate Zoom room creation..."
                   value={taskTitle}
                   onChange={e => setTaskTitle(e.target.value)}
                   autoFocus
@@ -803,7 +1139,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 <textarea
                   className="form-input"
                   style={{ minHeight: '65px', resize: 'vertical' }}
-                  placeholder="Nội dung và mục tiêu cần thực hiện..."
+                  placeholder="Nội dung, tiêu chí nghiệm thu (Acceptance criteria)..."
                   value={taskDesc}
                   onChange={e => setTaskDesc(e.target.value)}
                 />
@@ -813,17 +1149,17 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
-                    Trạng thái công việc
+                    Trạng thái (Column)
                   </label>
                   <select
                     className="form-input"
                     value={taskStatus}
                     onChange={e => setTaskStatus(e.target.value as TaskStatus)}
                   >
-                    <option value="TODO">📋 Cần làm (TODO)</option>
-                    <option value="IN_PROGRESS">⚡ Đang làm (IN_PROGRESS)</option>
-                    <option value="COMPLETED">✅ Đã xong (COMPLETED)</option>
-                    <option value="ARCHIVED">📦 Lưu trữ (ARCHIVED)</option>
+                    <option value="TODO">📋 To Do</option>
+                    <option value="IN_PROGRESS">⚡ In Progress</option>
+                    <option value="ARCHIVED">🔍 In Review (after push code)</option>
+                    <option value="COMPLETED">✅ Done</option>
                   </select>
                 </div>
 
@@ -836,10 +1172,10 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     value={taskPriority}
                     onChange={e => setTaskPriority(e.target.value as Priority)}
                   >
-                    <option value="LOW">Thấp (Low)</option>
-                    <option value="MEDIUM">Trung bình (Medium)</option>
-                    <option value="HIGH">Cao (High)</option>
-                    <option value="URGENT">Khẩn cấp (Urgent)</option>
+                    <option value="LOW">↓ Thấp (Low)</option>
+                    <option value="MEDIUM">= Trung bình (Medium)</option>
+                    <option value="HIGH">↑ Cao (High)</option>
+                    <option value="URGENT">⚡ Khẩn cấp (Urgent)</option>
                   </select>
                 </div>
               </div>
@@ -855,19 +1191,16 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                   value={taskDueDate}
                   onChange={e => setTaskDueDate(e.target.value)}
                 />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '3px', display: 'block' }}>
-                  💡 Nếu công việc quá hạn chót mà chưa hoàn thành, hệ thống sẽ tự động chuyển vào mục <strong>Lưu trữ (Archived)</strong>.
-                </span>
               </div>
 
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
-                  Tags (phân cách dấu phẩy)
+                  Tags / Component (phân cách dấu phẩy)
                 </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Học tập, Dự án, Công việc"
+                  placeholder="Course, Zoom, Backend, Frontend"
                   value={taskTags}
                   onChange={e => setTaskTags(e.target.value)}
                 />
@@ -876,7 +1209,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               {/* Sub-tasks checklist */}
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
-                  Danh sách Sub-tasks (Checklist Items)
+                  Sub-tasks / Checklist Items
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                   {taskSubItems.map((item, idx) => (
@@ -885,7 +1218,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                         type="text"
                         className="form-input"
                         style={{ flex: 1 }}
-                        placeholder={`Bước ${idx + 1}...`}
+                        placeholder={`Sub-task ${idx + 1}...`}
                         value={item}
                         onChange={e => handleSubItemChange(idx, e.target.value)}
                       />
@@ -908,20 +1241,20 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                     style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem', alignSelf: 'flex-start', marginTop: '0.2rem' }}
                     onClick={handleAddSubItemInput}
                   >
-                    <Plus size={14} /> Thêm Sub-item
+                    <Plus size={14} /> Thêm Sub-task
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                 {editingTask ? (
                   <button
                     type="button"
                     className="btn"
                     style={{
-                      background: 'rgba(239, 68, 68, 0.15)',
+                      background: 'rgba(239, 68, 68, 0.1)',
                       border: '1px solid rgba(239, 68, 68, 0.3)',
-                      color: '#ef4444',
+                      color: '#dc2626',
                       fontSize: '0.825rem'
                     }}
                     onClick={() => promptDeleteTask(editingTask)}
@@ -954,17 +1287,17 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               maxWidth: '430px',
               textAlign: 'center',
               padding: '1.75rem',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)'
+              border: '1px solid rgba(220, 38, 38, 0.3)',
+              boxShadow: 'var(--shadow-popover)'
             }}
           >
             <div style={{
               width: '56px',
               height: '56px',
               borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '2px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444',
+              background: 'rgba(220, 38, 38, 0.12)',
+              border: '2px solid rgba(220, 38, 38, 0.25)',
+              color: '#dc2626',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -973,12 +1306,12 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               <AlertTriangle size={28} />
             </div>
 
-            <h3 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 700, marginBottom: '0.6rem' }}>
-              Xác nhận xóa Checklist Task?
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 800, marginBottom: '0.6rem' }}>
+              Xác nhận xóa Task?
             </h3>
 
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-              Bạn có chắc chắn muốn xóa task <strong style={{ color: '#fff' }}>"{deleteTargetTask.title}"</strong>? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa task <strong style={{ color: 'var(--text-main)' }}>"{deleteTargetTask.title}"</strong>? Hành động này không thể hoàn tác.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
@@ -995,10 +1328,10 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 className="btn btn-danger"
                 style={{
                   minWidth: '130px',
-                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
                   color: '#fff',
                   fontWeight: 600,
-                  boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)'
+                  boxShadow: '0 0 15px rgba(220, 38, 38, 0.3)'
                 }}
                 onClick={confirmDeleteTask}
               >

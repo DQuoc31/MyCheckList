@@ -460,7 +460,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
         padding: '0.5rem 0'
       }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
             Theo Dõi Thói Quen & Tiêu Thụ
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -481,9 +481,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                 padding: '0.4rem 0.65rem',
                 fontSize: '0.78rem',
                 fontWeight: 600,
-                background: isCompactLabels ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-                borderColor: isCompactLabels ? 'rgba(99, 102, 241, 0.4)' : 'var(--border-color)',
-                color: isCompactLabels ? '#818cf8' : 'var(--text-muted)'
+                background: isCompactLabels ? 'rgba(21, 128, 61, 0.12)' : '#ffffff',
+                borderColor: isCompactLabels ? 'rgba(21, 128, 61, 0.35)' : 'var(--border-color)',
+                color: isCompactLabels ? 'var(--accent-primary)' : 'var(--text-muted)'
               }}
               title="Chuyển đổi kích thước nhãn tiêu đề thói quen"
             >
@@ -511,18 +511,18 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
           </div>
 
           {/* Date Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', padding: '2px', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', borderRadius: '10px', padding: '2px', border: '1px solid var(--border-color)', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
             <button onClick={handlePrevDay} className="btn-icon" title="Ngày hôm trước" style={{ padding: '0.4rem' }}>
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={handleToday}
               style={{
-                background: isToday ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3))' : 'none',
+                background: isToday ? 'linear-gradient(135deg, #15803d, #14532d)' : 'none',
                 border: 'none',
                 color: isToday ? '#fff' : 'var(--text-main)',
                 fontSize: '0.825rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 padding: '0.4rem 0.85rem',
                 borderRadius: '6px',
                 cursor: 'pointer'
@@ -538,11 +538,11 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
           <div style={{
             padding: '0.45rem 0.9rem',
             borderRadius: '10px',
-            background: 'rgba(0, 0, 0, 0.3)',
+            background: '#f1f5f3',
             border: '1px solid var(--border-color)',
             fontSize: '0.85rem',
-            color: '#fff',
-            fontWeight: 600
+            color: 'var(--text-main)',
+            fontWeight: 700
           }}>
             {selectedDate.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
           </div>
@@ -556,8 +556,8 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             width: '44px',
             height: '44px',
             borderRadius: '12px',
-            background: 'rgba(16, 185, 129, 0.15)',
-            color: '#10b981',
+            background: 'rgba(22, 163, 74, 0.12)',
+            color: '#16a34a',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -568,7 +568,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
               Mục tiêu hoàn thành
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
               {completedHabitsCount} / {totalHabitsCount}
             </div>
           </div>
@@ -579,8 +579,8 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             width: '44px',
             height: '44px',
             borderRadius: '12px',
-            background: 'rgba(99, 102, 241, 0.15)',
-            color: '#818cf8',
+            background: 'rgba(21, 128, 61, 0.12)',
+            color: '#15803d',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -591,7 +591,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
               Tỷ lệ hoàn thành
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
               {completionRate}%
             </div>
           </div>
@@ -602,8 +602,8 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             width: '44px',
             height: '44px',
             borderRadius: '12px',
-            background: 'rgba(245, 158, 11, 0.15)',
-            color: '#f59e0b',
+            background: 'rgba(217, 119, 6, 0.12)',
+            color: '#d97706',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -614,7 +614,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
               Chuỗi Streak cao nhất
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#fff' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
               {habits.length > 0 ? Math.max(...habits.map(calculateStreak), 0) : 0} ngày liên tiếp
             </div>
           </div>
@@ -635,15 +635,15 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             width: '64px',
             height: '64px',
             borderRadius: '20px',
-            background: 'rgba(99, 102, 241, 0.15)',
-            color: '#818cf8',
+            background: 'rgba(21, 128, 61, 0.12)',
+            color: '#15803d',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
             <Target size={32} />
           </div>
-          <h3 style={{ fontSize: '1.3rem', color: '#fff', fontWeight: 700 }}>
+          <h3 style={{ fontSize: '1.3rem', color: 'var(--text-main)', fontWeight: 800 }}>
             Chưa có thói quen hoặc hoạt động nào
           </h3>
           <p style={{ color: 'var(--text-muted)', maxWidth: '420px', fontSize: '0.9rem', lineHeight: 1.5 }}>
@@ -659,7 +659,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             const isCompleted = currentValue >= habit.dailyTarget;
             const streak = calculateStreak(habit);
             const IconComponent = HABIT_ICONS[habit.icon || 'sparkles'] || Sparkles;
-            const habitColor = habit.color || '#6366f1';
+            const habitColor = habit.color || '#15803d';
             const isCollapsed = collapsedHabitIds.has(habitId);
 
             return (
@@ -679,7 +679,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                     : '1px solid var(--border-color)',
                   boxShadow: isCompleted 
                     ? `0 8px 30px ${habitColor}18` 
-                    : '0 4px 20px rgba(0, 0, 0, 0.2)',
+                    : 'var(--shadow-card)',
                   transition: 'all 0.2s ease'
                 }}
               >
@@ -691,7 +691,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                   justifyContent: 'space-between',
                   gap: isCompactLabels ? '0.75rem' : '1.25rem',
                   paddingBottom: isCollapsed ? '0' : (isCompactLabels ? '0.75rem' : '1rem'),
-                  borderBottom: isCollapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.07)'
+                  borderBottom: isCollapsed ? 'none' : '1px solid var(--border-color)'
                 }}>
                   {/* Habit Info & Icon with Compact Label Support */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: isCompactLabels ? '0.6rem' : '0.85rem', minWidth: '200px' }}>
@@ -715,7 +715,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                         <h4 style={{
                           fontSize: isCompactLabels ? '0.98rem' : '1.15rem',
                           fontWeight: 800,
-                          color: '#fff',
+                          color: 'var(--text-main)',
                           lineHeight: 1.2
                         }}>
                           {habit.title}
@@ -726,9 +726,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                             fontWeight: 700,
                             padding: '1px 6px',
                             borderRadius: '9999px',
-                            background: 'rgba(245, 158, 11, 0.15)',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                            color: '#f59e0b',
+                            background: 'rgba(217, 119, 6, 0.12)',
+                            border: '1px solid rgba(217, 119, 6, 0.3)',
+                            color: '#b45309',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '2px'
@@ -738,7 +738,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                         )}
                       </div>
                       <div style={{ fontSize: isCompactLabels ? '0.72rem' : '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                        Mục tiêu: <strong style={{ color: '#fff' }}>{habit.dailyTarget} {habit.unit}</strong>/ngày
+                        Mục tiêu: <strong style={{ color: 'var(--text-main)' }}>{habit.dailyTarget} {habit.unit}</strong>/ngày
                       </div>
                     </div>
                   </div>
@@ -753,13 +753,13 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                         {currentValue} / {habit.dailyTarget} {habit.unit} ({percent}%)
                       </div>
                     </div>
-                    <div className="progress-container" style={{ height: isCompactLabels ? '5px' : '7px', background: 'rgba(255, 255, 255, 0.06)' }}>
+                    <div className="progress-container" style={{ height: isCompactLabels ? '5px' : '7px', background: 'rgba(20, 83, 45, 0.1)' }}>
                       <div
                         className="progress-fill"
                         style={{
                           width: `${percent}%`,
-                          background: isCompleted ? `linear-gradient(90deg, ${habitColor}, #10b981)` : habitColor,
-                          boxShadow: `0 0 10px ${habitColor}66`
+                          background: isCompleted ? `linear-gradient(90deg, ${habitColor}, #16a34a)` : habitColor,
+                          boxShadow: `0 0 10px ${habitColor}44`
                         }}
                       />
                     </div>
@@ -776,8 +776,8 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                           padding: isCompactLabels ? '0.35rem 0.6rem' : '0.45rem 0.75rem',
                           fontSize: isCompactLabels ? '0.74rem' : '0.8rem',
                           fontWeight: 600,
-                          background: 'rgba(255, 255, 255, 0.04)',
-                          borderColor: 'rgba(255, 255, 255, 0.1)'
+                          background: '#ffffff',
+                          borderColor: 'var(--border-color)'
                         }}
                       >
                         +{optionVal} {habit.unit}
@@ -798,7 +798,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                       Tùy chỉnh...
                     </button>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', marginLeft: '0.25rem', borderLeft: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '0.45rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', marginLeft: '0.25rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '0.45rem' }}>
                       <button
                         onClick={() => openEditModal(habit)}
                         title="Chỉnh sửa mục tiêu & thói quen"
@@ -832,7 +832,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                         style={{
                           color: isCollapsed ? 'var(--accent-primary)' : 'var(--text-muted)',
                           padding: '0.35rem',
-                          background: isCollapsed ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                          background: isCollapsed ? 'rgba(21, 128, 61, 0.12)' : 'transparent',
                           borderRadius: '6px'
                         }}
                       >
@@ -868,7 +868,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
             onClick={e => e.stopPropagation()}
             style={{ maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto' }}
           >
-            <h3 style={{ fontSize: '1.3rem', color: '#fff', fontWeight: 800, marginBottom: '0.5rem' }}>
+            <h3 style={{ fontSize: '1.3rem', color: 'var(--text-main)', fontWeight: 800, marginBottom: '0.5rem' }}>
               Thêm Thói Quen & Hoạt Động Mới
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
@@ -892,9 +892,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                       gap: '0.5rem',
                       padding: '0.5rem 0.75rem',
                       borderRadius: '8px',
-                      background: 'rgba(255, 255, 255, 0.03)',
+                      background: '#f8faf9',
                       border: '1px solid var(--border-color)',
-                      color: '#fff',
+                      color: 'var(--text-main)',
                       fontSize: '0.78rem',
                       textAlign: 'left',
                       cursor: 'pointer',
@@ -1041,7 +1041,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                       <ModalIcon size={20} />
                     </div>
                     <div>
-                      <h3 style={{ fontSize: '1.15rem', color: '#fff', fontWeight: 700 }}>
+                      <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700 }}>
                         Nhập Tiêu Thụ Tùy Chỉnh
                       </h3>
                       <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -1073,7 +1073,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
 
             <form onSubmit={handleCustomLogSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Mode switch: Nạp thêm vs Đặt giá trị */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(0,0,0,0.25)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(20, 83, 45, 0.06)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
                 <button
                   type="button"
                   onClick={() => setCustomLogMode('add')}
@@ -1082,7 +1082,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                     border: 'none',
                     borderRadius: 'var(--radius-sm)',
                     background: customLogMode === 'add' ? 'var(--accent-primary)' : 'transparent',
-                    color: '#fff',
+                    color: customLogMode === 'add' ? '#fff' : 'var(--text-muted)',
                     fontWeight: 600,
                     fontSize: '0.8rem',
                     cursor: 'pointer',
@@ -1098,8 +1098,8 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                     padding: '0.45rem',
                     border: 'none',
                     borderRadius: 'var(--radius-sm)',
-                    background: customLogMode === 'set' ? 'var(--accent-purple)' : 'transparent',
-                    color: '#fff',
+                    background: customLogMode === 'set' ? 'var(--accent-primary-hover)' : 'transparent',
+                    color: customLogMode === 'set' ? '#fff' : 'var(--text-muted)',
                     fontWeight: 600,
                     fontSize: '0.8rem',
                     cursor: 'pointer',
@@ -1162,7 +1162,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                     style={{
                       padding: '0.25rem 0.6rem',
                       borderRadius: '999px',
-                      background: 'rgba(255, 255, 255, 0.06)',
+                      background: 'rgba(20, 83, 45, 0.06)',
                       border: '1px solid var(--border-color)',
                       color: 'var(--text-main)',
                       fontSize: '0.75rem',
@@ -1206,7 +1206,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 700 }}>
+                <h3 style={{ fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700 }}>
                   Chỉnh Sửa Mục Tiêu & Thói Quen
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -1248,7 +1248,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
               </div>
 
               {/* Target & Unit Highlight Box */}
-              <div style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+              <div style={{ background: 'rgba(21, 128, 61, 0.06)', border: '1px solid rgba(21, 128, 61, 0.2)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', display: 'block', marginBottom: '0.35rem', fontWeight: 700 }}>
@@ -1373,7 +1373,7 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
               </div>
 
               <div>
-                <h3 style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 700, marginBottom: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.5rem' }}>
                   {confirmDialog.title}
                 </h3>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>

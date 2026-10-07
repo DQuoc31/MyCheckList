@@ -44,19 +44,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           width: '36px',
           height: '36px',
           borderRadius: '10px',
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: 'linear-gradient(135deg, #15803d, #14532d)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#fff',
           fontWeight: 'bold',
-          boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
+          boxShadow: '0 0 12px rgba(21, 128, 61, 0.35)',
           flexShrink: 0
         }}>
           ✓
         </div>
         <div>
-          <h1 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.2 }}>
             CheckFlow
           </h1>
           <p className="hide-on-mobile" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -102,20 +102,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                background: 'linear-gradient(135deg, #15803d, #14532d)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#fff',
                 fontWeight: 700,
                 fontSize: '0.8rem',
-                boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)',
+                boxShadow: '0 0 10px rgba(21, 128, 61, 0.25)',
                 flexShrink: 0
               }}>
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.825rem', fontWeight: 600, color: '#fff', lineHeight: 1.2 }}>
+                <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.2 }}>
                   {user.name}
                 </span>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>

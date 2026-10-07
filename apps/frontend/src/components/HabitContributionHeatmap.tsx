@@ -7,9 +7,7 @@ import {
   TrendingUp, 
   Award, 
   BarChart2, 
-  Calendar as CalendarIcon, 
   Zap, 
-  Clock, 
   Activity,
   CheckCircle2,
   ChevronUp
@@ -209,8 +207,8 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
       // Check if a new month starts in this week
       if (weekFirstDayMonth !== -1 && weekFirstDayMonth !== lastMonth) {
         const shortMonths = [
-          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+          'Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6',
+          'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'
         ];
         months.push({
           label: shortMonths[weekFirstDayMonth],
@@ -298,26 +296,26 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
     };
   }, [habit.history, habit.dailyTarget, historyMap, todayStr, selectedDate]);
 
-  // Color generator based on selected theme
-  const getCellColor = (level: 0 | 1 | 2 | 3 | 4, isSelected: boolean) => {
+  // Color generator based on selected theme tailored for light & deep dark green
+  const getCellColor = (level: 0 | 1 | 2 | 3 | 4) => {
     if (colorTheme === 'habit' && habit.color) {
       const base = habit.color;
       switch (level) {
-        case 0: return 'rgba(255, 255, 255, 0.04)';
-        case 1: return `${base}40`; // 25%
-        case 2: return `${base}77`; // 47%
-        case 3: return `${base}bb`; // 73%
+        case 0: return '#ebf3ed';
+        case 1: return `${base}44`; // 27%
+        case 2: return `${base}88`; // 53%
+        case 3: return `${base}cc`; // 80%
         case 4: return base;        // 100%
       }
     }
 
-    // Classic GitHub Dark Theme Colors
+    // High contrast Forest Emerald Color Scale (0 to 4)
     switch (level) {
-      case 0: return '#161b22';
-      case 1: return '#0e4429';
-      case 2: return '#006d32';
-      case 3: return '#26a641';
-      case 4: return '#39d353';
+      case 0: return '#ebf3ed'; // Soft empty cell
+      case 1: return '#86efac'; // Light emerald (1-32%)
+      case 2: return '#22c55e'; // Vibrant green (33-65%)
+      case 3: return '#15803d'; // Deep forest green (66-99%)
+      case 4: return '#14532d'; // Rich dark emerald (100%+)
     }
   };
 
@@ -352,10 +350,10 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
         flexDirection: 'column',
         gap: '0.85rem',
         padding: '1.25rem',
-        borderRadius: '14px',
-        background: 'rgba(13, 17, 23, 0.85)',
-        border: '1px solid rgba(255, 255, 255, 0.09)',
-        boxShadow: '0 8px 28px rgba(0, 0, 0, 0.35)',
+        borderRadius: 'var(--radius-lg)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-card)',
         width: '100%',
         boxSizing: 'border-box'
       }}
@@ -367,29 +365,29 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '0.75rem',
-        paddingBottom: '0.4rem',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+        paddingBottom: '0.65rem',
+        borderBottom: '1px solid var(--border-color)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '1rem', fontWeight: 600, color: '#e6edf3' }}>
-            <strong style={{ color: '#fff', fontSize: '1.15rem', fontWeight: 800 }}>
+          <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            <strong style={{ color: 'var(--accent-primary)', fontSize: '1.15rem', fontWeight: 800 }}>
               {stats.totalContributions}
             </strong>{' '}
             lần ghi nhận trong 1 năm qua
           </span>
           <span style={{
-            fontSize: '0.74rem',
-            padding: '3px 10px',
+            fontSize: '0.75rem',
+            padding: '4px 10px',
             borderRadius: '999px',
-            background: stats.daysTargetMet > 0 ? 'rgba(57, 211, 83, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-            color: stats.daysTargetMet > 0 ? '#39d353' : 'var(--text-muted)',
+            background: stats.daysTargetMet > 0 ? 'rgba(21, 128, 61, 0.1)' : 'var(--bg-secondary)',
+            color: stats.daysTargetMet > 0 ? 'var(--accent-primary)' : 'var(--text-muted)',
             fontWeight: 700,
-            border: `1px solid ${stats.daysTargetMet > 0 ? 'rgba(57, 211, 83, 0.3)' : 'rgba(255, 255, 255, 0.08)'}`,
+            border: `1px solid ${stats.daysTargetMet > 0 ? 'rgba(21, 128, 61, 0.25)' : 'var(--border-color)'}`,
             display: 'flex',
             alignItems: 'center',
-            gap: '4px'
+            gap: '5px'
           }}>
-            <CheckCircle2 size={13} /> {stats.daysTargetMet} ngày đạt 100% mục tiêu
+            <CheckCircle2 size={14} /> {stats.daysTargetMet} ngày đạt 100% mục tiêu
           </span>
         </div>
 
@@ -403,14 +401,14 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem',
-              background: showDetailedInsights ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-              border: `1px solid ${showDetailedInsights ? 'rgba(99, 102, 241, 0.4)' : 'var(--border-color)'}`,
-              color: showDetailedInsights ? '#818cf8' : 'var(--text-muted)',
+              background: showDetailedInsights ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
+              border: `1px solid ${showDetailedInsights ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+              color: showDetailedInsights ? 'var(--accent-primary)' : 'var(--text-muted)',
               fontSize: '0.78rem',
               fontWeight: 600,
               cursor: 'pointer',
               padding: '0.35rem 0.65rem',
-              borderRadius: '7px',
+              borderRadius: 'var(--radius-sm)',
               transition: 'all 0.15s ease'
             }}
           >
@@ -428,13 +426,13 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                background: 'rgba(255, 255, 255, 0.04)',
+                background: 'var(--bg-secondary)',
                 border: '1px solid var(--border-color)',
                 color: 'var(--text-muted)',
                 fontSize: '0.78rem',
                 cursor: 'pointer',
                 padding: '0.35rem 0.65rem',
-                borderRadius: '7px'
+                borderRadius: 'var(--radius-sm)'
               }}
             >
               <span>Màu sắc</span>
@@ -448,13 +446,13 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                   right: 0,
                   top: '100%',
                   marginTop: '4px',
-                  background: '#161b22',
-                  border: '1px solid #30363d',
-                  borderRadius: '8px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
                   padding: '0.5rem',
                   minWidth: '210px',
                   zIndex: 30,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                  boxShadow: 'var(--shadow-popover)'
                 }}
               >
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', padding: '0 0.4rem' }}>
@@ -469,17 +467,17 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                     gap: '0.5rem',
                     width: '100%',
                     padding: '0.45rem 0.5rem',
-                    background: colorTheme === 'github' ? 'rgba(57, 211, 83, 0.15)' : 'transparent',
+                    background: colorTheme === 'github' ? 'rgba(21, 128, 61, 0.1)' : 'transparent',
                     border: 'none',
-                    borderRadius: '5px',
-                    color: colorTheme === 'github' ? '#39d353' : 'var(--text-main)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: colorTheme === 'github' ? 'var(--accent-primary)' : 'var(--text-main)',
                     fontSize: '0.78rem',
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
                 >
-                  <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#39d353' }} />
-                  <span>Xanh lá GitHub (Mặc định)</span>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: '#15803d' }} />
+                  <span>Xanh lá Rừng (Mặc định)</span>
                 </button>
 
                 <button
@@ -491,9 +489,9 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                     gap: '0.5rem',
                     width: '100%',
                     padding: '0.45rem 0.5rem',
-                    background: colorTheme === 'habit' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                    background: colorTheme === 'habit' ? 'rgba(21, 128, 61, 0.1)' : 'transparent',
                     border: 'none',
-                    borderRadius: '5px',
+                    borderRadius: 'var(--radius-sm)',
                     color: colorTheme === 'habit' ? (habit.color || 'var(--accent-primary)') : 'var(--text-main)',
                     fontSize: '0.78rem',
                     cursor: 'pointer',
@@ -501,7 +499,7 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                     marginTop: '2px'
                   }}
                 >
-                  <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: habit.color || '#6366f1' }} />
+                  <div style={{ width: '12px', height: '12px', borderRadius: '2px', background: habit.color || 'var(--accent-primary)' }} />
                   <span>Màu chủ đạo thói quen</span>
                 </button>
               </div>
@@ -518,18 +516,18 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
       }}>
         {/* Metric 1: Target Completion Rate */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: '9px',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
           padding: '0.65rem 0.85rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px'
         }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-            <Target size={12} color="#10b981" /> Tỷ Lệ Đạt Mục Tiêu
+            <Target size={12} color="var(--accent-primary)" /> Tỷ Lệ Đạt Mục Tiêu
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {stats.completionRate}%
           </div>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
@@ -539,39 +537,39 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
 
         {/* Metric 2: Longest & Current Streak */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: '9px',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
           padding: '0.65rem 0.85rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px'
         }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-            <Flame size={12} color="#f59e0b" /> Chuỗi Kỷ Lục
+            <Flame size={12} color="var(--accent-warning)" /> Chuỗi Kỷ Lục
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#d97706', letterSpacing: '-0.02em' }}>
             {stats.longestStreak} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>ngày</span>
           </div>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
-            Hiện tại: <strong style={{ color: '#fff' }}>{stats.currentStreak}</strong> ngày
+            Hiện tại: <strong style={{ color: 'var(--text-main)' }}>{stats.currentStreak}</strong> ngày
           </div>
         </div>
 
         {/* Metric 3: Total Accumulated Amount */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: '9px',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
           padding: '0.65rem 0.85rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px'
         }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-            <TrendingUp size={12} color="#6366f1" /> Tổng Tích Lũy Năm
+            <TrendingUp size={12} color="var(--accent-primary)" /> Tổng Tích Lũy Năm
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)', letterSpacing: '-0.02em' }}>
             {stats.totalValueYear.toLocaleString('vi-VN')} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>{habit.unit}</span>
           </div>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
@@ -581,18 +579,18 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
 
         {/* Metric 4: Daily Average */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: '9px',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
           padding: '0.65rem 0.85rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px'
         }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-            <Zap size={12} color="#06b6d4" /> Trung Bình Hoạt Động
+            <Zap size={12} color="#0284c7" /> Trung Bình Hoạt Động
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {stats.avgDailyActive.toLocaleString('vi-VN')} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>{habit.unit}/ngày</span>
           </div>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
@@ -602,22 +600,22 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
 
         {/* Metric 5: Top Performance Day & Month */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.06)',
-          borderRadius: '9px',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
           padding: '0.65rem 0.85rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '2px'
         }}>
           <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-            <Award size={12} color="#ec4899" /> Ngày Năng Suất Nhất
+            <Award size={12} color="#db2777" /> Ngày Năng Suất Nhất
           </div>
-          <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {bestDayOfWeek.name}
           </div>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
-            Đạt 100%: <strong style={{ color: '#10b981' }}>{bestDayOfWeek.metLogs}</strong> lần
+            Đạt 100%: <strong style={{ color: 'var(--accent-primary)' }}>{bestDayOfWeek.metLogs}</strong> lần
           </div>
         </div>
       </div>
@@ -668,15 +666,15 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
               height: '91px', // 7 rows * 10px + 6 gaps * 3.5px
               width: '26px',
               fontSize: '0.68rem',
-              color: 'var(--text-dim)',
+              color: 'var(--text-muted)',
               textAlign: 'right',
               paddingRight: '4px',
               userSelect: 'none',
               lineHeight: '10px'
             }}>
-              <span style={{ marginTop: '13px' }}>Mon</span>
-              <span style={{ marginTop: '13px' }}>Wed</span>
-              <span style={{ marginTop: '13px' }}>Fri</span>
+              <span style={{ marginTop: '13px' }}>T2</span>
+              <span style={{ marginTop: '13px' }}>T4</span>
+              <span style={{ marginTop: '13px' }}>T6</span>
             </div>
 
             {/* Weeks Columns (53 columns) */}
@@ -694,7 +692,7 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                   }}
                 >
                   {week.map((cell, dIdx) => {
-                    const cellColor = getCellColor(cell.level, cell.isSelected);
+                    const cellColor = getCellColor(cell.level);
                     const isHovered = hoveredCell?.data.dateStr === cell.dateStr;
 
                     return (
@@ -709,15 +707,15 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                           borderRadius: '2px',
                           backgroundColor: cellColor,
                           border: cell.isSelected 
-                            ? '1.5px solid #fff' 
+                            ? '1.5px solid var(--accent-primary-hover)' 
                             : cell.isToday 
-                              ? '1px solid rgba(255, 255, 255, 0.6)' 
-                              : '1px solid rgba(255, 255, 255, 0.04)',
+                              ? '1.5px solid var(--accent-primary)' 
+                              : '1px solid rgba(20, 83, 45, 0.12)',
                           cursor: cell.isFuture ? 'default' : 'pointer',
-                          opacity: cell.isFuture ? 0.2 : 1,
-                          transform: isHovered ? 'scale(1.25)' : 'scale(1)',
+                          opacity: cell.isFuture ? 0.3 : 1,
+                          transform: isHovered ? 'scale(1.3)' : 'scale(1)',
                           transition: 'transform 0.1s ease, outline 0.1s ease',
-                          outline: isHovered ? '1.5px solid #fff' : 'none',
+                          outline: isHovered ? '1.5px solid var(--accent-primary)' : 'none',
                           zIndex: isHovered ? 10 : 1,
                           boxShadow: cell.level === 4 && colorTheme === 'habit'
                             ? `0 0 6px ${habit.color}88`
@@ -741,32 +739,32 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
             left: `${hoveredCell.x}px`,
             top: `${hoveredCell.y - 48}px`,
             transform: 'translateX(-50%)',
-            background: '#1c2128',
-            color: '#fff',
-            border: '1px solid #444c56',
+            background: '#14532d',
+            color: '#ffffff',
+            border: '1px solid #166534',
             borderRadius: '6px',
             padding: '5px 9px',
             fontSize: '0.75rem',
             whiteSpace: 'nowrap',
             zIndex: 50,
             pointerEvents: 'none',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+            boxShadow: 'var(--shadow-popover)',
             display: 'flex',
             flexDirection: 'column',
             gap: '2px'
           }}
         >
-          <div style={{ fontWeight: 600, color: '#f0f6fc' }}>
+          <div style={{ fontWeight: 600, color: '#f0fdf4' }}>
             {hoveredCell.data.value > 0 ? (
               <span>
                 <strong>{hoveredCell.data.value.toLocaleString('vi-VN')} {habit.unit}</strong>{' '}
                 ({hoveredCell.data.percentage}% mục tiêu)
               </span>
             ) : (
-              <span style={{ color: 'var(--text-muted)' }}>Chưa có ghi nhận</span>
+              <span style={{ color: '#bbf7d0' }}>Chưa có ghi nhận</span>
             )}
           </div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
+          <div style={{ fontSize: '0.68rem', color: '#86efac' }}>
             {hoveredCell.data.date.toLocaleDateString('vi-VN', {
               weekday: 'long',
               day: '2-digit',
@@ -780,22 +778,22 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
       {/* Optional: Expanded In-Depth Breakdown (Day-of-Week & Monthly Analysis) */}
       {showDetailedInsights && (
         <div style={{
-          background: 'rgba(0, 0, 0, 0.3)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '10px',
+          background: 'rgba(20, 83, 45, 0.04)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
           padding: '1rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
           marginTop: '0.25rem'
         }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Activity size={16} color="var(--accent-primary)" /> Bảng Phân Tích Chuyên Sâu Theo Chu Kỳ
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
             {/* Day of Week Consistency Bars */}
-            <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+            <div style={{ background: 'var(--bg-card)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
                 Hiệu suất theo Thứ trong tuần:
               </div>
@@ -805,18 +803,18 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                   return (
                     <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.74rem' }}>
                       <span style={{ width: '65px', color: 'var(--text-muted)' }}>{dow.name}</span>
-                      <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', height: '6px', borderRadius: '999px', overflow: 'hidden' }}>
+                      <div style={{ flex: 1, background: 'var(--bg-secondary)', height: '6px', borderRadius: '999px', overflow: 'hidden' }}>
                         <div 
                           style={{ 
                             width: `${rate}%`, 
                             height: '100%', 
-                            background: rate >= 70 ? '#39d353' : rate >= 40 ? '#06b6d4' : '#6366f1',
+                            background: rate >= 70 ? 'var(--accent-primary)' : rate >= 40 ? '#0284c7' : '#d97706',
                             borderRadius: '999px' 
                           }} 
                         />
                       </div>
-                      <span style={{ width: '50px', textAlign: 'right', fontWeight: 600, color: '#fff' }}>
-                        {dow.metLogs} ngày ({rate}%)
+                      <span style={{ width: '55px', textAlign: 'right', fontWeight: 600, color: 'var(--text-main)' }}>
+                        {dow.metLogs}n ({rate}%)
                       </span>
                     </div>
                   );
@@ -825,7 +823,7 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
             </div>
 
             {/* Monthly Total Volume Chart */}
-            <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+            <div style={{ background: 'var(--bg-card)', padding: '0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
               <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
                 Tổng lượng tiêu thụ theo Tháng:
               </div>
@@ -837,16 +835,16 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
                       key={idx} 
                       style={{
                         padding: '0.45rem',
-                        borderRadius: '6px',
-                        background: isTopMonth ? 'rgba(57, 211, 83, 0.1)' : 'rgba(255,255,255,0.03)',
-                        border: isTopMonth ? '1px solid rgba(57, 211, 83, 0.3)' : '1px solid rgba(255,255,255,0.04)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: isTopMonth ? 'rgba(21, 128, 61, 0.1)' : 'var(--bg-secondary)',
+                        border: isTopMonth ? '1px solid rgba(21, 128, 61, 0.3)' : '1px solid var(--border-color)',
                         textAlign: 'center'
                       }}
                     >
-                      <div style={{ fontSize: '0.7rem', color: isTopMonth ? '#39d353' : 'var(--text-muted)', fontWeight: 600 }}>
+                      <div style={{ fontSize: '0.7rem', color: isTopMonth ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: 600 }}>
                         {m.name}
                       </div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>
                         {m.totalVal.toLocaleString('vi-VN')}
                       </div>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>
@@ -875,10 +873,10 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
         {/* Left summary note */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <span>
-            Độ đều đặn khi hoạt động: <strong style={{ color: '#10b981' }}>{stats.activeConsistencyRate}%</strong> ngày đạt mục tiêu
+            Độ đều đặn khi hoạt động: <strong style={{ color: 'var(--accent-primary)' }}>{stats.activeConsistencyRate}%</strong> ngày đạt mục tiêu
           </span>
           <span>
-            Bao phủ cả năm: <strong style={{ color: '#fff' }}>{stats.activeDaysCount}/{stats.pastYearTotalDays} ngày</strong> ({Math.round((stats.activeDaysCount / (stats.pastYearTotalDays || 1)) * 100)}%)
+            Bao phủ cả năm: <strong style={{ color: 'var(--text-main)' }}>{stats.activeDaysCount}/{stats.pastYearTotalDays} ngày</strong> ({Math.round((stats.activeDaysCount / (stats.pastYearTotalDays || 1)) * 100)}%)
           </span>
         </div>
 
@@ -886,11 +884,11 @@ export const HabitContributionHeatmap: React.FC<HabitContributionHeatmapProps> =
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span>Ít hơn</span>
           <div style={{ display: 'flex', gap: '3px', alignItems: 'center', margin: '0 2px' }}>
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(0, false), border: '1px solid rgba(255,255,255,0.05)' }} title="0%" />
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(1, false) }} title="1% - 32%" />
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(2, false) }} title="33% - 65%" />
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(3, false) }} title="66% - 99%" />
-            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(4, false) }} title="100%+" />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(0), border: '1px solid rgba(20, 83, 45, 0.12)' }} title="0%" />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(1) }} title="1% - 32%" />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(2) }} title="33% - 65%" />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(3) }} title="66% - 99%" />
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getCellColor(4) }} title="100%+" />
           </div>
           <span>Nhiều hơn</span>
         </div>

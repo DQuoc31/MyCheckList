@@ -61,9 +61,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         className="modal-card" 
         style={{
           maxWidth: '440px',
-          background: 'linear-gradient(165deg, rgba(23, 30, 48, 0.95), rgba(15, 20, 32, 0.98))',
-          border: '1px solid rgba(99, 102, 241, 0.25)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.2)',
+          background: '#ffffff',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-popover)',
           borderRadius: '24px',
           padding: '2rem'
         }}
@@ -75,17 +75,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             height: '52px',
             margin: '0 auto 1rem',
             borderRadius: '16px',
-            background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+            background: 'linear-gradient(135deg, #15803d, #14532d)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 24px rgba(99, 102, 241, 0.45)',
+            boxShadow: '0 0 24px rgba(21, 128, 61, 0.35)',
             color: '#fff'
           }}>
             {mode === 'login' ? <LogIn size={26} /> : <UserPlus size={26} />}
           </div>
           
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {mode === 'login' ? 'Chào mừng trở lại!' : 'Tạo tài khoản mới'}
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
@@ -98,11 +98,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Tab Switcher */}
         <div style={{
           display: 'flex',
-          background: 'rgba(0, 0, 0, 0.35)',
+          background: '#f1f5f3',
           padding: '4px',
           borderRadius: '12px',
           marginBottom: '1.5rem',
-          border: '1px solid rgba(255, 255, 255, 0.06)'
+          border: '1px solid var(--border-color)'
         }}>
           <button
             type="button"
@@ -112,13 +112,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               padding: '0.55rem',
               borderRadius: '8px',
               border: 'none',
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: '0.875rem',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              background: mode === 'login' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-              color: mode === 'login' ? '#fff' : 'var(--text-muted)',
-              boxShadow: mode === 'login' ? '0 2px 10px rgba(99, 102, 241, 0.3)' : 'none'
+              background: mode === 'login' ? 'linear-gradient(135deg, #15803d, #14532d)' : 'transparent',
+              color: mode === 'login' ? '#ffffff' : 'var(--text-muted)',
+              boxShadow: mode === 'login' ? '0 2px 10px rgba(21, 128, 61, 0.25)' : 'none'
             }}
           >
             Đăng nhập
@@ -131,13 +131,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               padding: '0.55rem',
               borderRadius: '8px',
               border: 'none',
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: '0.875rem',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              background: mode === 'register' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-              color: mode === 'register' ? '#fff' : 'var(--text-muted)',
-              boxShadow: mode === 'register' ? '0 2px 10px rgba(99, 102, 241, 0.3)' : 'none'
+              background: mode === 'register' ? 'linear-gradient(135deg, #15803d, #14532d)' : 'transparent',
+              color: mode === 'register' ? '#ffffff' : 'var(--text-muted)',
+              boxShadow: mode === 'register' ? '0 2px 10px rgba(21, 128, 61, 0.25)' : 'none'
             }}
           >
             Đăng ký
@@ -154,7 +154,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             borderRadius: '12px',
             background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#f87171',
+            color: '#dc2626',
             fontSize: '0.85rem',
             marginBottom: '1.25rem'
           }}>

@@ -14,11 +14,6 @@ import {
   Layers,
   Calendar,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  Flame,
-  Target,
   Droplets,
   CheckSquare,
   Sunrise,
@@ -29,7 +24,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Sparkles,
-  Zap,
+  Flame,
+  Target,
+  Wallet,
   Activity
 } from 'lucide-react';
 
@@ -76,7 +73,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           width: '36px',
           height: '36px',
           borderRadius: '50%',
-          border: '3px solid rgba(99, 102, 241, 0.2)',
+          border: '3px solid rgba(21, 128, 61, 0.2)',
           borderTopColor: 'var(--accent-primary)',
           animation: 'spin 1s linear infinite',
           margin: '0 auto 1rem'
@@ -123,17 +120,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
   // Synchronized 1:1 order with Sidebar (Tasks -> Habits -> Finances -> Overview)
   const categoryTabs = [
-    { id: 'TASKS' as const, label: 'Việc Cần Làm', icon: CheckSquare, color: '#6366f1', badge: `${taskData.completionRate}% xong` },
-    { id: 'HABITS' as const, label: 'Thói Quen', icon: Flame, color: '#f59e0b', badge: `${habitData.todayCompletedCount}/${habitData.totalHabits} đạt` },
-    { id: 'FINANCES' as const, label: 'Thu Chi', icon: Wallet, color: '#10b981', badge: formatVND(financeData.netBalance) },
-    { id: 'OVERVIEW' as const, label: 'Tổng Quan', icon: BarChart3, color: '#8b5cf6', badge: 'Tất cả' }
+    { id: 'TASKS' as const, label: 'Việc Cần Làm', icon: CheckSquare, color: '#15803d', badge: `${taskData.completionRate}% xong` },
+    { id: 'HABITS' as const, label: 'Thói Quen', icon: Flame, color: '#d97706', badge: `${habitData.todayCompletedCount}/${habitData.totalHabits} đạt` },
+    { id: 'FINANCES' as const, label: 'Thu Chi', icon: Wallet, color: '#16a34a', badge: formatVND(financeData.netBalance) },
+    { id: 'OVERVIEW' as const, label: 'Tổng Quan', icon: BarChart3, color: '#0f766e', badge: 'Tất cả' }
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Header & Subtitle */}
       <div>
-        <h2 style={{ fontSize: '1.4rem', color: '#fff', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.4rem', color: 'var(--text-main)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Activity size={24} color="var(--accent-primary)" /> Trung Tâm Thống Kê
         </h2>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -146,10 +143,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
         gap: '0.6rem',
-        background: 'rgba(0, 0, 0, 0.25)',
+        background: 'var(--bg-card)',
         padding: '0.5rem',
         borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-color)'
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-card)'
       }}>
         {categoryTabs.map(tab => {
           const Icon = tab.icon;
@@ -165,16 +163,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 padding: '0.75rem 1rem',
                 borderRadius: 'var(--radius-md)',
                 border: isActive ? `1px solid ${tab.color}` : '1px solid transparent',
-                background: isActive ? `${tab.color}20` : 'transparent',
-                color: isActive ? '#fff' : 'var(--text-muted)',
+                background: isActive ? `${tab.color}15` : 'transparent',
+                color: isActive ? tab.color : 'var(--text-muted)',
                 cursor: 'pointer',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: isActive ? `0 4px 14px ${tab.color}25` : 'none'
+                boxShadow: isActive ? `0 2px 8px ${tab.color}20` : 'none'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Icon size={18} color={isActive ? tab.color : 'currentColor'} />
-                <span style={{ fontSize: '0.88rem', fontWeight: isActive ? 600 : 500 }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--text-main)' : 'var(--text-muted)' }}>
                   {tab.label}
                 </span>
               </div>
@@ -182,7 +180,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 fontSize: '0.72rem',
                 padding: '0.2rem 0.5rem',
                 borderRadius: '999px',
-                background: isActive ? tab.color : 'rgba(255, 255, 255, 0.08)',
+                background: isActive ? tab.color : 'var(--bg-secondary)',
                 color: isActive ? '#fff' : 'var(--text-dim)',
                 fontWeight: 600
               }}>
@@ -231,7 +229,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Số Dư Ròng</span>
                 <DollarSign size={18} color="var(--accent-primary)" />
               </div>
-              <div style={{ fontSize: '1.7rem', fontWeight: 700, color: financeData.netBalance >= 0 ? '#fff' : 'var(--accent-warning)' }}>
+              <div style={{ fontSize: '1.7rem', fontWeight: 700, color: financeData.netBalance >= 0 ? 'var(--text-main)' : 'var(--accent-warning)' }}>
                 {financeData.netBalance > 0 ? `+${formatVND(financeData.netBalance)}` : formatVND(financeData.netBalance)}
               </div>
               <div style={{ fontSize: '0.75rem', color: financeData.netBalance >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)', marginTop: '0.25rem', fontWeight: 500 }}>
@@ -239,12 +237,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-purple)' }}>
+            <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-primary-hover)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Số Lượng Giao Dịch</span>
-                <Wallet size={18} color="var(--accent-purple)" />
+                <Wallet size={18} color="var(--accent-primary-hover)" />
               </div>
-              <div style={{ fontSize: '1.7rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.7rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {financeData.transactionCount}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -257,7 +255,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
             {/* Breakdown by 4 Time Slots */}
             <div className="glass-card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.05rem', color: '#fff', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
                 <Sunrise size={18} color="var(--accent-warning)" /> Dòng Tiền Theo 4 Khung Giờ Trong Ngày
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
@@ -278,7 +276,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                           <Icon size={15} color={config.color} />
-                          <span style={{ color: '#fff', fontWeight: 600 }}>{config.label}</span>
+                          <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{config.label}</span>
                           <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>({config.timeRange})</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem' }}>
@@ -312,7 +310,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
             {/* Category Breakdown */}
             <div className="glass-card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.05rem', color: '#fff', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
                 <PieChart size={18} color="var(--accent-info)" /> Phân Bổ Chi Tiêu Theo Danh Mục
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
@@ -326,9 +324,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxHeight: '320px', overflowY: 'auto' }}>
                   {financeData.byCategory.slice(0, 6).map((cat, idx) => (
-                    <div key={idx} style={{ background: 'rgba(0, 0, 0, 0.2)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)' }}>
+                    <div key={idx} style={{ background: 'var(--bg-secondary)', padding: '0.65rem 0.85rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                        <span style={{ color: '#fff', fontWeight: 500 }}>
+                        <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>
                           {idx + 1}. {cat.category}
                         </span>
                         <span style={{ color: cat.type === 'INCOME' ? 'var(--accent-success)' : 'var(--accent-danger)', fontWeight: 600 }}>
@@ -365,7 +363,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tỷ Lệ Hoàn Thành</span>
                 <CheckCircle2 size={18} color="var(--accent-success)" />
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {taskData.completionRate}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -373,12 +371,12 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-purple)' }}>
+            <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-primary)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Sub-tasks Đã Xong</span>
-                <Layers size={18} color="var(--accent-purple)" />
+                <Layers size={18} color="var(--accent-primary)" />
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {taskData.completedSubItems} / {taskData.totalSubItems}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -404,7 +402,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Lịch Trình Đã Đặt</span>
                 <Calendar size={18} color="var(--accent-info)" />
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {taskData.upcomingEventsCount}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -416,7 +414,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           {/* Progress & Distribution Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
             <div className="glass-card" style={{ padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.05rem', color: '#fff', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', marginBottom: '1.25rem', fontWeight: 700 }}>
                 Phân Bổ Trạng Thái Công Việc (Status Breakdown)
               </h3>
 
@@ -473,19 +471,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
             <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
               <div style={{
-                width: '90px',
-                height: '90px',
+                width: '80px',
+                height: '80px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-purple))',
+                background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-primary-hover))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1rem',
-                boxShadow: '0 0 25px rgba(99, 102, 241, 0.4)'
+                boxShadow: '0 0 20px rgba(21, 128, 61, 0.25)'
               }}>
-                <CheckCircle2 size={44} color="#fff" />
+                <CheckCircle2 size={40} color="#fff" />
               </div>
-              <h4 style={{ fontSize: '1.3rem', color: '#fff', marginBottom: '0.35rem' }}>
+              <h4 style={{ fontSize: '1.3rem', color: 'var(--text-main)', marginBottom: '0.35rem', fontWeight: 700 }}>
                 {taskData.completionRate >= 80 ? '🌟 Năng Suất Tuyệt Vời!' : taskData.completionRate >= 50 ? '⚡ Tiến Độ Tốt!' : '💪 Tiếp Tục Cố Gắng!'}
               </h4>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '320px', margin: '0 auto' }}>
@@ -521,7 +519,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Chuỗi Kỷ Lục (Streak)</span>
                 <Flame size={18} color="var(--accent-danger)" />
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {habitData.habitsStats.length > 0 ? Math.max(...habitData.habitsStats.map(h => h.currentStreak), 0) : 0} ngày
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -534,7 +532,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tổng Số Thói Quen</span>
                 <Droplets size={18} color="var(--accent-info)" />
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {habitData.totalHabits}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -547,7 +545,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Lượt Ghi Nhận Lịch Sử</span>
                 <Sparkles size={18} color="var(--accent-success)" />
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {habitData.totalLoggedEntries}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
@@ -558,7 +556,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
           {/* Habits Performance Table */}
           <div className="glass-card" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontSize: '1.05rem', color: '#fff', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', marginBottom: '1rem', fontWeight: 700 }}>
               Chi Tiết Tiến Độ Từng Thói Quen
             </h3>
 
@@ -574,7 +572,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                     <div
                       key={h.id}
                       style={{
-                        background: 'rgba(0, 0, 0, 0.25)',
+                        background: 'var(--bg-secondary)',
                         padding: '1rem 1.25rem',
                         borderRadius: 'var(--radius-md)',
                         border: '1px solid var(--border-color)',
@@ -585,14 +583,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>
+                          <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>
                             {h.title}
                           </span>
                           <span style={{
                             fontSize: '0.72rem',
                             padding: '0.15rem 0.5rem',
                             borderRadius: '999px',
-                            background: isAchieved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                            background: isAchieved ? 'rgba(21, 128, 61, 0.12)' : 'rgba(245, 158, 11, 0.12)',
                             color: isAchieved ? 'var(--accent-success)' : 'var(--accent-warning)',
                             fontWeight: 600
                           }}>
@@ -644,7 +642,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               style={{ padding: '1.5rem', cursor: 'pointer', borderLeft: '4px solid var(--accent-primary)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
                   <CheckSquare size={20} color="var(--accent-primary)" /> Năng Suất Công Việc
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Xem chi tiết &rarr;</span>
@@ -672,7 +670,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               style={{ padding: '1.5rem', cursor: 'pointer', borderLeft: '4px solid var(--accent-warning)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
                   <Flame size={20} color="var(--accent-warning)" /> Rèn Luyện Thói Quen
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Xem chi tiết &rarr;</span>
@@ -688,7 +686,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Lượt log dữ liệu:</span>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>{habitData.totalLoggedEntries} lượt</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{habitData.totalLoggedEntries} lượt</span>
                 </div>
               </div>
             </div>
@@ -700,7 +698,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
               style={{ padding: '1.5rem', cursor: 'pointer', borderLeft: '4px solid var(--accent-success)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
                   <Wallet size={20} color="var(--accent-success)" /> Tài Chính & Thu Chi
                 </h3>
                 <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Xem chi tiết &rarr;</span>
@@ -716,7 +714,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 </div>
                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.25rem 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
-                  <span style={{ color: '#fff', fontWeight: 600 }}>Số dư ròng:</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Số dư ròng:</span>
                   <span style={{ color: financeData.netBalance >= 0 ? 'var(--accent-success)' : 'var(--accent-warning)', fontWeight: 700 }}>
                     {formatVND(financeData.netBalance)}
                   </span>

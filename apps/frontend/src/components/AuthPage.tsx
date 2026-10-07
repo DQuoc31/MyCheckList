@@ -65,7 +65,7 @@ export const AuthPage: React.FC = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(ellipse at top left, rgba(99, 102, 241, 0.15), transparent 60%), radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.15), transparent 60%), var(--bg-primary)',
+      background: 'radial-gradient(ellipse at top left, rgba(21, 128, 61, 0.08), transparent 60%), radial-gradient(ellipse at bottom right, rgba(15, 118, 110, 0.08), transparent 60%), var(--bg-primary)',
       padding: '1.5rem 1rem',
       boxSizing: 'border-box',
       overflowY: 'auto'
@@ -75,7 +75,7 @@ export const AuthPage: React.FC = () => {
         maxWidth: '1080px',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '2rem',
+        gap: '2.5rem',
         alignItems: 'center'
       }}>
         
@@ -87,19 +87,19 @@ export const AuthPage: React.FC = () => {
               width: '48px',
               height: '48px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+              background: 'linear-gradient(135deg, #15803d, #14532d)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
               fontSize: '1.5rem',
               fontWeight: 800,
-              boxShadow: '0 0 25px rgba(99, 102, 241, 0.5)'
+              boxShadow: '0 0 25px rgba(21, 128, 61, 0.35)'
             }}>
               ✓
             </div>
             <div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 CheckFlow
               </h1>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -108,10 +108,10 @@ export const AuthPage: React.FC = () => {
             </div>
           </div>
 
-          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.25, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
             Quản lý công việc & lịch trình <br />
             <span style={{
-              background: 'linear-gradient(135deg, #818cf8, #c084fc)',
+              background: 'linear-gradient(135deg, #15803d, #047857)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
@@ -129,21 +129,22 @@ export const AuthPage: React.FC = () => {
               display: 'flex',
               alignItems: 'flex-start',
               gap: '1rem',
-              padding: '1rem',
+              padding: '1.1rem',
               borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
+              background: '#ffffff',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
             }}>
               <div style={{
                 padding: '0.6rem',
                 borderRadius: '10px',
-                background: 'rgba(99, 102, 241, 0.15)',
-                color: '#818cf8'
+                background: 'rgba(21, 128, 61, 0.12)',
+                color: '#15803d'
               }}>
                 <CheckCircle2 size={20} />
               </div>
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.2rem' }}>
+                <h4 style={{ color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.2rem' }}>
                   Checklist Phân cấp & Tags
                 </h4>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', lineHeight: 1.4 }}>
@@ -156,21 +157,22 @@ export const AuthPage: React.FC = () => {
               display: 'flex',
               alignItems: 'flex-start',
               gap: '1rem',
-              padding: '1rem',
+              padding: '1.1rem',
               borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
+              background: '#ffffff',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
             }}>
               <div style={{
                 padding: '0.6rem',
                 borderRadius: '10px',
-                background: 'rgba(16, 185, 129, 0.15)',
-                color: '#34d399'
+                background: 'rgba(16, 185, 129, 0.12)',
+                color: '#10b981'
               }}>
                 <Calendar size={20} />
               </div>
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.2rem' }}>
+                <h4 style={{ color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.2rem' }}>
                   Lịch biểu Time-Blocking
                 </h4>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', lineHeight: 1.4 }}>
@@ -183,21 +185,22 @@ export const AuthPage: React.FC = () => {
               display: 'flex',
               alignItems: 'flex-start',
               gap: '1rem',
-              padding: '1rem',
+              padding: '1.1rem',
               borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.06)'
+              background: '#ffffff',
+              border: '1px solid var(--border-color)',
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
             }}>
               <div style={{
                 padding: '0.6rem',
                 borderRadius: '10px',
-                background: 'rgba(168, 85, 247, 0.15)',
-                color: '#c084fc'
+                background: 'rgba(15, 118, 110, 0.12)',
+                color: '#0f766e'
               }}>
                 <BarChart3 size={20} />
               </div>
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.2rem' }}>
+                <h4 style={{ color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.2rem' }}>
                   Báo cáo Hiệu suất & Tiến độ
                 </h4>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', lineHeight: 1.4 }}>
@@ -210,11 +213,11 @@ export const AuthPage: React.FC = () => {
 
         {/* Right Side: Auth Card */}
         <div style={{
-          background: 'linear-gradient(165deg, rgba(23, 30, 48, 0.85), rgba(15, 20, 32, 0.95))',
+          background: '#ffffff',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(99, 102, 241, 0.25)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(99, 102, 241, 0.15)',
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-popover)',
           borderRadius: '28px',
           padding: '2.5rem 2.25rem',
           position: 'relative'
@@ -227,16 +230,16 @@ export const AuthPage: React.FC = () => {
               gap: '0.4rem',
               padding: '0.35rem 0.75rem',
               borderRadius: '9999px',
-              background: 'rgba(99, 102, 241, 0.12)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              color: '#818cf8',
+              background: 'rgba(21, 128, 61, 0.1)',
+              border: '1px solid rgba(21, 128, 61, 0.25)',
+              color: '#15803d',
               fontSize: '0.78rem',
-              fontWeight: 600,
+              fontWeight: 700,
               marginBottom: '1rem'
             }}>
               <ShieldCheck size={14} /> JWT Secured & Multi-user Isolation
             </div>
-            <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+            <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
               {mode === 'login' ? 'Đăng nhập tài khoản' : 'Tạo tài khoản mới'}
             </h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
@@ -249,11 +252,11 @@ export const AuthPage: React.FC = () => {
           {/* Mode Switcher Tabs */}
           <div style={{
             display: 'flex',
-            background: 'rgba(0, 0, 0, 0.4)',
-            padding: '5px',
+            background: '#f1f5f3',
+            padding: '4px',
             borderRadius: '14px',
             marginBottom: '1.75rem',
-            border: '1px solid rgba(255, 255, 255, 0.08)'
+            border: '1px solid var(--border-color)'
           }}>
             <button
               type="button"
@@ -263,13 +266,13 @@ export const AuthPage: React.FC = () => {
                 padding: '0.65rem',
                 borderRadius: '10px',
                 border: 'none',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '0.9rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                background: mode === 'login' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-                color: mode === 'login' ? '#fff' : 'var(--text-muted)',
-                boxShadow: mode === 'login' ? '0 4px 14px rgba(99, 102, 241, 0.35)' : 'none'
+                background: mode === 'login' ? 'linear-gradient(135deg, #15803d, #14532d)' : 'transparent',
+                color: mode === 'login' ? '#ffffff' : 'var(--text-muted)',
+                boxShadow: mode === 'login' ? '0 4px 14px rgba(21, 128, 61, 0.3)' : 'none'
               }}
             >
               Đăng nhập
@@ -282,13 +285,13 @@ export const AuthPage: React.FC = () => {
                 padding: '0.65rem',
                 borderRadius: '10px',
                 border: 'none',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '0.9rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                background: mode === 'register' ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'transparent',
-                color: mode === 'register' ? '#fff' : 'var(--text-muted)',
-                boxShadow: mode === 'register' ? '0 4px 14px rgba(99, 102, 241, 0.35)' : 'none'
+                background: mode === 'register' ? 'linear-gradient(135deg, #15803d, #14532d)' : 'transparent',
+                color: mode === 'register' ? '#ffffff' : 'var(--text-muted)',
+                boxShadow: mode === 'register' ? '0 4px 14px rgba(21, 128, 61, 0.3)' : 'none'
               }}
             >
               Đăng ký
@@ -305,7 +308,7 @@ export const AuthPage: React.FC = () => {
               borderRadius: '12px',
               background: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#f87171',
+              color: '#dc2626',
               fontSize: '0.875rem',
               marginBottom: '1.25rem'
             }}>
@@ -430,8 +433,8 @@ export const AuthPage: React.FC = () => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#818cf8',
-                    fontWeight: 600,
+                    color: 'var(--accent-primary)',
+                    fontWeight: 700,
                     cursor: 'pointer',
                     textDecoration: 'underline'
                   }}
@@ -448,8 +451,8 @@ export const AuthPage: React.FC = () => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#818cf8',
-                    fontWeight: 600,
+                    color: 'var(--accent-primary)',
+                    fontWeight: 700,
                     cursor: 'pointer',
                     textDecoration: 'underline'
                   }}
