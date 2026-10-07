@@ -2378,18 +2378,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   height: '38px',
                   borderRadius: '10px',
                   background: editingEvent 
-                    ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 88, 12, 0.2))' 
-                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
-                  border: `1px solid ${editingEvent ? 'rgba(245, 158, 11, 0.4)' : 'rgba(99, 102, 241, 0.4)'}`,
+                    ? 'rgba(245, 158, 11, 0.15)' 
+                    : 'rgba(21, 128, 61, 0.15)',
+                  border: `1px solid ${editingEvent ? 'rgba(245, 158, 11, 0.3)' : 'rgba(21, 128, 61, 0.3)'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: editingEvent ? '#f59e0b' : '#818cf8'
+                  color: editingEvent ? '#d97706' : 'var(--accent-primary)'
                 }}>
                   {editingEvent ? <Edit3 size={18} /> : <Clock size={18} />}
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.15rem', color: '#fff', fontWeight: 700, margin: 0 }}>
+                  <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', fontWeight: 700, margin: 0 }}>
                     {editingEvent ? 'Chỉnh Sửa Lịch Trình' : 'Thêm Khung Giờ Lịch Trình'}
                   </h3>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
@@ -2428,8 +2428,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           borderRadius: '6px',
                           fontSize: '0.75rem',
                           fontWeight: 500,
-                          background: 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
                           color: 'var(--text-main)',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease'
@@ -2530,9 +2530,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         borderRadius: '6px',
                         fontSize: '0.75rem',
                         fontWeight: 600,
-                        background: 'rgba(99, 102, 241, 0.1)',
-                        border: '1px solid rgba(99, 102, 241, 0.25)',
-                        color: '#818cf8',
+                        background: 'rgba(21, 128, 61, 0.08)',
+                        border: '1px solid rgba(21, 128, 61, 0.25)',
+                        color: 'var(--accent-primary)',
                         cursor: 'pointer'
                       }}
                     >
@@ -2557,18 +2557,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         key={cat}
                         onClick={() => setNewCategory(cat)}
                         style={{
-                          padding: '0.4rem 0.5rem',
+                          padding: '0.45rem 0.5rem',
                           borderRadius: '8px',
                           border: isSelected ? `2px solid ${color}` : '1px solid var(--border-color)',
-                          background: isSelected ? `${color}22` : 'rgba(255, 255, 255, 0.03)',
-                          color: isSelected ? '#fff' : 'var(--text-muted)',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
+                          background: isSelected ? `${color}18` : 'var(--bg-secondary)',
+                          color: isSelected ? color : 'var(--text-main)',
+                          fontSize: '0.78rem',
+                          fontWeight: isSelected ? 700 : 500,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '0.3rem',
+                          gap: '0.35rem',
                           transition: 'all 0.15s ease'
                         }}
                       >
@@ -2582,8 +2582,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
               {/* Recurring Schedule Option */}
               <div style={{
-                background: isRecurring ? 'rgba(139, 92, 246, 0.08)' : 'rgba(255, 255, 255, 0.02)',
-                border: isRecurring ? '1px solid rgba(139, 92, 246, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
+                background: isRecurring ? 'rgba(21, 128, 61, 0.05)' : 'var(--bg-secondary)',
+                border: isRecurring ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
                 borderRadius: '10px',
                 padding: '0.75rem 0.85rem',
                 transition: 'all 0.2s ease'
@@ -2594,18 +2594,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       width: '32px',
                       height: '32px',
                       borderRadius: '8px',
-                      background: isRecurring ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(99, 102, 241, 0.3))' : 'rgba(255, 255, 255, 0.05)',
-                      border: `1px solid ${isRecurring ? 'rgba(139, 92, 246, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                      background: isRecurring ? 'rgba(21, 128, 61, 0.15)' : 'rgba(0, 0, 0, 0.05)',
+                      border: `1px solid ${isRecurring ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: isRecurring ? '#a78bfa' : 'var(--text-muted)',
+                      color: isRecurring ? 'var(--accent-primary)' : 'var(--text-muted)',
                       flexShrink: 0
                     }}>
                       <Repeat size={16} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
                         Lặp lại lịch trình tự động
                       </div>
                       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
@@ -2631,10 +2631,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     <span style={{
                       position: 'absolute',
                       top: 0, left: 0, right: 0, bottom: 0,
-                      backgroundColor: isRecurring ? '#8b5cf6' : 'rgba(255, 255, 255, 0.15)',
+                      backgroundColor: isRecurring ? 'var(--accent-primary)' : 'var(--border-color)',
                       transition: 'all .25s ease',
                       borderRadius: '24px',
-                      boxShadow: isRecurring ? '0 0 10px rgba(139, 92, 246, 0.5)' : 'none'
+                      boxShadow: isRecurring ? '0 0 8px rgba(21, 128, 61, 0.3)' : 'none'
                     }}>
                       <span style={{
                         position: 'absolute',
@@ -2645,14 +2645,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         backgroundColor: '#fff',
                         transition: 'all .25s ease',
                         borderRadius: '50%',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.4)'
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                       }} />
                     </span>
                   </label>
                 </div>
 
                 {isRecurring && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid var(--border-color)' }}>
                     <label style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
                       Chu kỳ lặp lại
                     </label>
@@ -2663,9 +2663,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         style={{
                           padding: '0.45rem 0.35rem',
                           borderRadius: '6px',
-                          border: recurrencePattern === 'WEEKLY' ? '1.5px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
-                          background: recurrencePattern === 'WEEKLY' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
-                          color: recurrencePattern === 'WEEKLY' ? '#fff' : 'var(--text-muted)',
+                          border: recurrencePattern === 'WEEKLY' ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                          background: recurrencePattern === 'WEEKLY' ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
+                          color: recurrencePattern === 'WEEKLY' ? 'var(--accent-primary)' : 'var(--text-main)',
                           fontSize: '0.75rem',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -2681,9 +2681,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         style={{
                           padding: '0.45rem 0.35rem',
                           borderRadius: '6px',
-                          border: recurrencePattern === 'DAILY' ? '1.5px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
-                          background: recurrencePattern === 'DAILY' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
-                          color: recurrencePattern === 'DAILY' ? '#fff' : 'var(--text-muted)',
+                          border: recurrencePattern === 'DAILY' ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                          background: recurrencePattern === 'DAILY' ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
+                          color: recurrencePattern === 'DAILY' ? 'var(--accent-primary)' : 'var(--text-main)',
                           fontSize: '0.75rem',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -2699,9 +2699,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         style={{
                           padding: '0.45rem 0.35rem',
                           borderRadius: '6px',
-                          border: recurrencePattern === 'MONTHLY' ? '1.5px solid #8b5cf6' : '1px solid rgba(255, 255, 255, 0.1)',
-                          background: recurrencePattern === 'MONTHLY' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255, 255, 255, 0.03)',
-                          color: recurrencePattern === 'MONTHLY' ? '#fff' : 'var(--text-muted)',
+                          border: recurrencePattern === 'MONTHLY' ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                          background: recurrencePattern === 'MONTHLY' ? 'rgba(21, 128, 61, 0.12)' : 'var(--bg-secondary)',
+                          color: recurrencePattern === 'MONTHLY' ? 'var(--accent-primary)' : 'var(--text-main)',
                           fontSize: '0.75rem',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -2723,7 +2723,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 justifyContent: 'space-between',
                 marginTop: '0.75rem',
                 paddingTop: '0.75rem',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+                borderTop: '1px solid var(--border-color)'
               }}>
                 {editingEvent ? (
                   <button
@@ -2784,12 +2784,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <AlertTriangle size={28} />
             </div>
 
-            <h3 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 700, marginBottom: '0.6rem' }}>
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700, marginBottom: '0.6rem' }}>
               Xác nhận xóa lịch trình?
             </h3>
 
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-              Bạn có chắc chắn muốn xóa sự kiện <strong style={{ color: '#fff' }}>"{deleteTargetEvent.title}"</strong> ({formatTime(deleteTargetEvent.startTime)} - {formatTime(deleteTargetEvent.endTime)})? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa sự kiện <strong style={{ color: 'var(--text-main)' }}>"{deleteTargetEvent.title}"</strong> ({formatTime(deleteTargetEvent.startTime)} - {formatTime(deleteTargetEvent.endTime)})? Hành động này không thể hoàn tác.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
@@ -2845,7 +2845,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   <Target size={20} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 700, margin: 0 }}>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 700, margin: 0 }}>
                     Chi Tiết Hạn Chót Công Việc
                   </h3>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
