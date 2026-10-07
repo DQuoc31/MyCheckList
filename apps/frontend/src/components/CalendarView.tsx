@@ -2915,7 +2915,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <h4 style={{
                   fontSize: '1.05rem',
                   fontWeight: 700,
-                  color: selectedTaskDetail.status === 'COMPLETED' ? 'var(--text-muted)' : '#fff',
+                  color: selectedTaskDetail.status === 'COMPLETED' ? 'var(--text-muted)' : 'var(--text-main)',
                   textDecoration: selectedTaskDetail.status === 'COMPLETED' ? 'line-through' : 'none',
                   margin: 0
                 }}>
@@ -2923,7 +2923,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 </h4>
 
                 {selectedTaskDetail.description && (
-                  <p style={{ fontSize: '0.825rem', color: 'var(--text-dim)', marginTop: '0.4rem', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.4rem', lineHeight: 1.5 }}>
                     {selectedTaskDetail.description}
                   </p>
                 )}
@@ -2943,12 +2943,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           fontSize: '0.72rem',
                           padding: '2px 7px',
                           borderRadius: '4px',
-                          background: 'rgba(255, 255, 255, 0.06)',
+                          background: 'var(--bg-secondary)',
                           color: 'var(--text-main)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          border: '1px solid var(--border-color)',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '3px'
+                          gap: '3px',
+                          fontWeight: 500
                         }}
                       >
                         <Tag size={10} /> {tag}
@@ -2985,8 +2986,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           gap: '0.5rem',
                           padding: '0.4rem 0.6rem',
                           borderRadius: '6px',
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.06)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
                           cursor: 'pointer'
                         }}
                       >
@@ -2995,8 +2996,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         </span>
                         <span style={{
                           fontSize: '0.8rem',
-                          color: sub.completed ? 'var(--text-muted)' : '#fff',
-                          textDecoration: sub.completed ? 'line-through' : 'none'
+                          color: sub.completed ? 'var(--text-muted)' : 'var(--text-main)',
+                          textDecoration: sub.completed ? 'line-through' : 'none',
+                          fontWeight: 500
                         }}>
                           {sub.title}
                         </span>
@@ -3012,7 +3014,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 paddingTop: '0.85rem',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                borderTop: '1px solid var(--border-color)',
                 marginTop: '0.5rem'
               }}>
                 <button
@@ -3025,20 +3027,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn"
                   onClick={async () => {
                     await handleToggleTaskStatus(selectedTaskDetail);
                     setSelectedTaskDetail(prev => prev ? { ...prev, status: prev.status === 'COMPLETED' ? 'TODO' : 'COMPLETED' } : null);
                   }}
                   style={{
                     background: selectedTaskDetail.status === 'COMPLETED' 
-                      ? 'rgba(255, 255, 255, 0.1)' 
-                      : 'linear-gradient(135deg, #10b981, #059669)',
-                    border: 'none',
-                    color: '#fff'
+                      ? 'var(--bg-secondary)' 
+                      : 'var(--accent-primary)',
+                    border: selectedTaskDetail.status === 'COMPLETED' 
+                      ? '1px solid var(--border-color)' 
+                      : 'none',
+                    color: selectedTaskDetail.status === 'COMPLETED' 
+                      ? 'var(--text-main)' 
+                      : '#ffffff',
+                    fontWeight: 700,
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.85rem'
                   }}
                 >
-                  {selectedTaskDetail.status === 'COMPLETED' ? 'Đánh dấu chưa xong' : '✓ Đánh dấu hoàn thành'}
+                  {selectedTaskDetail.status === 'COMPLETED' ? '↩ Đánh dấu chưa xong' : '✓ Đánh dấu hoàn thành'}
                 </button>
               </div>
             </div>
