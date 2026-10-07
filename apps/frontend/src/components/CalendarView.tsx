@@ -1336,24 +1336,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       border: isSelected 
                         ? '1.5px solid var(--accent-primary)' 
                         : isToday 
-                          ? '1px solid rgba(99, 102, 241, 0.4)' 
+                          ? '1px solid rgba(21, 128, 61, 0.4)' 
                           : '1px solid transparent',
                       background: isSelected 
-                        ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2))' 
+                        ? 'rgba(21, 128, 61, 0.12)' 
                         : isToday 
-                          ? 'rgba(99, 102, 241, 0.08)' 
-                          : 'rgba(255, 255, 255, 0.02)',
+                          ? 'rgba(21, 128, 61, 0.05)' 
+                          : 'transparent',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: isSelected ? '#818cf8' : 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: isSelected || isToday ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
                       {dayLabels[idx]}
                     </span>
                     <span style={{
                       fontSize: '0.9rem',
                       fontWeight: isSelected || isToday ? 700 : 500,
-                      color: isSelected ? '#fff' : isToday ? '#818cf8' : 'var(--text-main)',
+                      color: isSelected ? 'var(--accent-primary)' : isToday ? 'var(--accent-primary)' : 'var(--text-main)',
                       marginTop: '2px'
                     }}>
                       {day.getDate()}
@@ -1365,8 +1365,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           width: '5px',
                           height: '5px',
                           borderRadius: '50%',
-                          background: isSelected ? 'var(--accent-primary)' : '#818cf8',
-                          boxShadow: '0 0 6px rgba(99, 102, 241, 0.8)'
+                          background: 'var(--accent-primary)',
+                          boxShadow: '0 0 6px rgba(21, 128, 61, 0.4)'
                         }} />
                       )}
                       {dayTks.length > 0 && (
@@ -1375,7 +1375,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           height: '5px',
                           borderRadius: '50%',
                           background: '#ef4444',
-                          boxShadow: '0 0 6px rgba(239, 68, 68, 0.8)'
+                          boxShadow: '0 0 6px rgba(239, 68, 68, 0.4)'
                         }} />
                       )}
                     </div>
@@ -1619,7 +1619,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     }}
                     title="Nhấn để mở chế độ xem ngày chi tiết"
                   >
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isToday ? '#818cf8' : 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isToday ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
                       {dayLabels[idx]}
                     </div>
                     <div style={{
@@ -1632,9 +1632,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       justifyContent: 'center',
                       fontWeight: 700,
                       fontSize: '0.95rem',
-                      background: isToday ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'transparent',
-                      color: isToday ? '#fff' : 'var(--text-main)',
-                      boxShadow: isToday ? '0 0 12px rgba(99, 102, 241, 0.4)' : 'none'
+                      background: isToday ? 'var(--accent-primary)' : 'transparent',
+                      color: isToday ? '#ffffff' : 'var(--text-main)',
+                      boxShadow: isToday ? '0 2px 8px rgba(21, 128, 61, 0.3)' : 'none'
                     }}>
                       {day.getDate()}
                     </div>
@@ -1862,56 +1862,73 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     setViewMode('day');
                   }}
                   style={{
-                    minHeight: '52px',
+                    minHeight: '75px',
                     borderRadius: 'var(--radius-sm)',
                     background: isSelected 
-                      ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.2))' 
+                      ? 'rgba(21, 128, 61, 0.08)' 
                       : isToday 
-                        ? 'rgba(99, 102, 241, 0.1)' 
+                        ? 'rgba(21, 128, 61, 0.04)' 
                         : isCurrentMonth 
-                          ? 'rgba(255, 255, 255, 0.02)' 
-                          : 'rgba(0, 0, 0, 0.2)',
+                          ? '#ffffff' 
+                          : '#f8fafc',
                     border: isSelected 
                       ? '1.5px solid var(--accent-primary)' 
                       : isToday 
-                        ? '1px solid rgba(99, 102, 241, 0.5)' 
+                        ? '1.5px solid var(--accent-primary)' 
                         : '1px solid var(--border-color)',
-                    padding: '0.35rem 0.25rem',
+                    padding: '0.35rem 0.3rem',
                     display: 'flex',
                     flexDirection: 'column',
                     cursor: 'pointer',
-                    opacity: isCurrentMonth ? 1 : 0.4,
+                    opacity: isCurrentMonth ? 1 : 0.5,
                     transition: 'all 0.15s ease'
                   }}
                   className="calendar-month-cell"
                 >
                   {/* Date number */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
                     <span style={{
-                      width: '22px',
-                      height: '22px',
+                      width: '24px',
+                      height: '24px',
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.78rem',
+                      fontSize: '0.8rem',
                       fontWeight: isToday || isSelected ? 700 : 500,
-                      background: isSelected ? 'var(--accent-primary)' : isToday ? '#6366f1' : 'transparent',
-                      color: isSelected || isToday ? '#fff' : isCurrentMonth ? 'var(--text-main)' : 'var(--text-dim)'
+                      background: isToday 
+                        ? 'var(--accent-primary)' 
+                        : isSelected 
+                          ? 'rgba(21, 128, 61, 0.15)' 
+                          : 'transparent',
+                      color: isToday 
+                        ? '#ffffff' 
+                        : isSelected 
+                          ? 'var(--accent-primary)' 
+                          : isCurrentMonth 
+                            ? 'var(--text-main)' 
+                            : 'var(--text-dim)'
                     }}>
                       {day.getDate()}
                     </span>
 
                     {/* Desktop badge */}
                     {totalItems > 0 && (
-                      <span className="hide-on-mobile" style={{ fontSize: '0.62rem', padding: '1px 4px', borderRadius: '4px', background: dayTasks.length > 0 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(99, 102, 241, 0.2)', color: dayTasks.length > 0 ? '#fca5a5' : '#818cf8', fontWeight: 600 }}>
+                      <span className="hide-on-mobile" style={{
+                        fontSize: '0.62rem',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        background: dayTasks.length > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(21, 128, 61, 0.12)',
+                        color: dayTasks.length > 0 ? '#dc2626' : 'var(--accent-primary)',
+                        fontWeight: 700
+                      }}>
                         {totalItems}
                       </span>
                     )}
                   </div>
 
                   {/* Desktop Previews: Task Deadlines & Events */}
-                  <div className="hide-on-mobile" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                  <div className="hide-on-mobile" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px', overflow: 'hidden' }}>
                     {dayTasks.slice(0, 1).map(t => {
                       const taskId = t.id || t._id || '';
                       return (
@@ -1922,23 +1939,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             setSelectedTaskDetail(t);
                           }}
                           style={{
-                            fontSize: '0.65rem',
-                            padding: '1px 4px',
-                            borderRadius: '3px',
-                            background: 'rgba(239, 68, 68, 0.25)',
-                            borderLeft: '2px solid #ef4444',
-                            color: '#fff',
+                            fontSize: '0.68rem',
+                            padding: '2px 5px',
+                            borderRadius: '4px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            borderLeft: '3px solid #ef4444',
+                            borderTop: '1px solid rgba(239, 68, 68, 0.25)',
+                            borderRight: '1px solid rgba(239, 68, 68, 0.25)',
+                            borderBottom: '1px solid rgba(239, 68, 68, 0.25)',
+                            color: '#991b1b',
+                            fontWeight: 600,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '2px'
+                            gap: '3px'
                           }}
                           title={`🎯 Hạn chót: ${t.title}`}
                         >
-                          <Target size={8} style={{ color: '#f87171', flexShrink: 0 }} />
+                          <Target size={9} style={{ color: '#ef4444', flexShrink: 0 }} />
                           <span>{t.dueDate ? formatTime(t.dueDate) : ''} {t.title}</span>
                         </div>
                       );
@@ -1955,30 +1976,35 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             handleOpenEditModal(evt, e);
                           }}
                           style={{
-                            fontSize: '0.65rem',
-                            padding: '1px 4px',
-                            borderRadius: '3px',
-                            background: `${color}33`,
-                            borderLeft: `2px solid ${color}`,
-                            color: '#fff',
+                            fontSize: '0.68rem',
+                            padding: '2px 5px',
+                            borderRadius: '4px',
+                            background: `${color}18`,
+                            borderLeft: `3px solid ${color}`,
+                            borderTop: '1px solid rgba(0,0,0,0.06)',
+                            borderRight: '1px solid rgba(0,0,0,0.06)',
+                            borderBottom: '1px solid rgba(0,0,0,0.06)',
+                            color: 'var(--text-main)',
+                            fontWeight: 600,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '2px'
+                            gap: '3px'
                           }}
                           title={`${formatTime(evt.startTime)} - ${evt.title}`}
                         >
-                          {evt.isRecurring && <Repeat size={8} style={{ color: '#c4b5fd', flexShrink: 0 }} />}
-                          <span>{formatTime(evt.startTime)} {evt.title}</span>
+                          {evt.isRecurring && <Repeat size={9} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />}
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.64rem' }}>{formatTime(evt.startTime)}</span>
+                          <span>{evt.title}</span>
                         </div>
                       );
                     })}
 
                     {totalItems > 2 && (
-                      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 600, marginTop: '1px' }}>
                         +{totalItems - 2} mốc
                       </div>
                     )}
