@@ -86,6 +86,10 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
   const [taskSubItems, setTaskSubItems] = useState<string[]>(['']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Quick X days deadline helper states
+  const [customDaysOffset, setCustomDaysOffset] = useState<number>(3);
+  const [deadlineTimePreset, setDeadlineTimePreset] = useState<'23:59' | '18:00' | '12:00' | '09:00' | 'CURRENT'>('23:59');
+
   // Date format helpers
   const formatForDateTimeLocal = (isoString?: string) => {
     if (!isoString) return '';
@@ -100,6 +104,66 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
       return `${y}-${m}-${day}T${h}:${min}`;
     } catch {
       return '';
+    }
+  };
+
+  const applyDaysDeadline = (days: number, timeMode: '23:59' | '18:00' | '12:00' | '09:00' | 'CURRENT' = deadlineTimePreset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+
+    if (timeMode === 'CURRENT') {
+      if (taskDueDate) {
+        try {
+          const prev = new Date(taskDueDate);
+          d.setHours(prev.getHours(), prev.getMinutes(), 0, 0);
+        } catch {
+          // fallback
+        }
+      }
+    } else {
+      const [h, m] = timeMode.split(':').map(Number);
+      d.setHours(h, m, 0, 0);
+    }
+
+    setTaskDueDate(formatForDateTimeLocal(d.toISOString()));
+  };
+
+  const getDeadlinePreviewText = (dateStr: string) => {
+    if (!dateStr) return null;
+    try {
+      const target = new Date(dateStr);
+      const now = new Date();
+      const diffMs = target.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+      const formatted = target.toLocaleString('vi-VN', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      let badge = '';
+      let badgeColor = 'var(--text-muted)';
+      if (diffMs < 0) {
+        badge = 'Đã quá hạn';
+        badgeColor = '#dc2626';
+      } else if (diffDays === 0) {
+        badge = 'Hôm nay';
+        badgeColor = '#d97706';
+      } else if (diffDays === 1) {
+        badge = 'Ngày mai (1 ngày nữa)';
+        badgeColor = '#2563eb';
+      } else {
+        badge = `Còn ${diffDays} ngày nữa`;
+        badgeColor = '#16a34a';
+      }
+
+      return { formatted, badge, badgeColor, diffDays };
+    } catch {
+      return null;
     }
   };
 
@@ -1439,17 +1503,247 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
                 </div>
               </div>
 
-              {/* Deadline (Hạn chót) */}
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem', fontWeight: 600 }}>
-                  📅 Hạn chót (Deadline)
-                </label>
+              {/* Deadline (Hạn chót) with X-Days Quick Setters */}
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '0.85rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                  <label style={{ fontSize: '0.825rem', color: 'var(--text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Calendar size={14} color="var(--accent-primary)" />
+                    <span>📅 Hạn chót (Deadline)</span>
+                  </label>
+                  {taskDueDate && (
+                    <button
+                      type="button"
+                      onClick={() => setTaskDueDate('')}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#dc2626',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                      }}
+                      title="Xóa hạn chót của công việc này"
+                    >
+                      <X size={12} /> Xóa deadline
+                    </button>
+                  )}
+                </div>
+
+                {/* Direct Datetime picker */}
                 <input
                   type="datetime-local"
                   className="form-input"
+                  style={{ marginBottom: '0.65rem' }}
                   value={taskDueDate}
                   onChange={e => setTaskDueDate(e.target.value)}
                 />
+
+                {/* Quick Presets row */}
+                <div style={{ marginBottom: '0.65rem' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                    ⚡ Đặt nhanh theo số ngày:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                    {[
+                      { label: 'Hôm nay', days: 0, time: '23:59' },
+                      { label: '+1 ngày (Mai)', days: 1 },
+                      { label: '+2 ngày', days: 2 },
+                      { label: '+3 ngày', days: 3 },
+                      { label: '+5 ngày', days: 5 },
+                      { label: '+7 ngày (1 tuần)', days: 7 },
+                      { label: '+14 ngày (2 tuần)', days: 14 },
+                      { label: '+30 ngày (1 tháng)', days: 30 }
+                    ].map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => applyDaysDeadline(preset.days, (preset.time as any) || deadlineTimePreset)}
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '0.25rem 0.55rem',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-main)',
+                          color: 'var(--text-main)',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                          e.currentTarget.style.color = 'var(--accent-primary)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = 'var(--border-color)';
+                          e.currentTarget.style.color = 'var(--text-main)';
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom X Days Input & Time Selector */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  flexWrap: 'wrap',
+                  background: 'rgba(0, 0, 0, 0.02)',
+                  padding: '0.45rem 0.6rem',
+                  borderRadius: '6px',
+                  border: '1px dashed var(--border-color)'
+                }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    Tùy chỉnh: sau
+                  </span>
+                  
+                  {/* Stepper for days */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setCustomDaysOffset(prev => Math.max(1, prev - 1))}
+                      style={{
+                        padding: '0.2rem 0.45rem',
+                        borderRadius: '4px 0 0 4px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: 700
+                      }}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={customDaysOffset}
+                      onChange={e => setCustomDaysOffset(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      style={{
+                        width: '44px',
+                        textAlign: 'center',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        padding: '0.2rem',
+                        borderTop: '1px solid var(--border-color)',
+                        borderBottom: '1px solid var(--border-color)',
+                        borderLeft: 'none',
+                        borderRight: 'none',
+                        outline: 'none',
+                        background: 'var(--bg-main)',
+                        color: 'var(--text-main)'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCustomDaysOffset(prev => prev + 1)}
+                      style={{
+                        padding: '0.2rem 0.45rem',
+                        borderRadius: '0 4px 4px 0',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        fontWeight: 700
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    ngày lúc
+                  </span>
+
+                  {/* Preset Time dropdown */}
+                  <select
+                    value={deadlineTimePreset}
+                    onChange={e => setDeadlineTimePreset(e.target.value as any)}
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '0.2rem 0.4rem',
+                      borderRadius: '4px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-card)',
+                      color: 'var(--text-main)',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="23:59">23:59 (Cuối ngày)</option>
+                    <option value="18:00">18:00 (Hết giờ làm)</option>
+                    <option value="12:00">12:00 (Trưa)</option>
+                    <option value="09:00">09:00 (Sáng)</option>
+                    <option value="CURRENT">Giờ hiện tại</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => applyDaysDeadline(customDaysOffset, deadlineTimePreset)}
+                    style={{
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: '5px',
+                      border: 'none',
+                      background: 'var(--accent-primary)',
+                      color: '#ffffff',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      marginLeft: 'auto'
+                    }}
+                  >
+                    Áp dụng
+                  </button>
+                </div>
+
+                {/* Deadline Human Preview Badge */}
+                {taskDueDate && (() => {
+                  const preview = getDeadlinePreviewText(taskDueDate);
+                  if (!preview) return null;
+                  return (
+                    <div style={{
+                      marginTop: '0.55rem',
+                      padding: '0.45rem 0.65rem',
+                      borderRadius: '6px',
+                      background: 'rgba(21, 128, 61, 0.08)',
+                      border: '1px solid rgba(21, 128, 61, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.75rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-main)' }}>
+                        <Clock size={13} color="var(--accent-primary)" />
+                        <span><strong>{preview.formatted}</strong></span>
+                      </div>
+                      <span style={{
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        fontWeight: 700,
+                        fontSize: '0.7rem',
+                        color: preview.badgeColor,
+                        background: 'rgba(255, 255, 255, 0.7)'
+                      }}>
+                        {preview.badge}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>

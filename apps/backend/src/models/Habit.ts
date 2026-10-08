@@ -19,6 +19,9 @@ const HabitSchema = new Schema<IHabitDocument>(
     color: { type: String, default: '#6366f1' },
     unit: { type: String, required: true, trim: true, default: 'lần' },
     dailyTarget: { type: Number, required: true, default: 1 },
+    frequency: { type: String, enum: ['DAILY', 'WEEKLY_DAYS', 'WEEKLY_TARGET'], default: 'DAILY' },
+    targetDays: { type: [Number], default: [0, 1, 2, 3, 4, 5, 6] },
+    weeklyTarget: { type: Number, default: 1 },
     quickOptions: [{ type: Number }],
     history: [HabitLogEntrySchema]
   },

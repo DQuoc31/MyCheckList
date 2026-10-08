@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { IHabitTracker, CreateHabitDto, UpdateHabitDto } from '@mychecklist/shared';
+import { IHabitTracker, CreateHabitDto, UpdateHabitDto, HabitFrequency } from '@mychecklist/shared';
 import { 
   Plus, 
   Trash2, 
@@ -27,7 +27,9 @@ import {
   ChevronUp,
   ChevronDown,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Clock,
+  Repeat
 } from 'lucide-react';
 import { HabitAPI } from '../services/api';
 import { HabitContributionHeatmap } from './HabitContributionHeatmap';
@@ -52,11 +54,57 @@ const HABIT_ICONS: Record<string, any> = {
   zap: Zap
 };
 
+// Day definitions (0 = Sunday, 1 = Monday, ...)
+const DAY_OPTIONS = [
+  { day: 1, label: 'T2', name: 'Thứ 2' },
+  { day: 2, label: 'T3', name: 'Thứ 3' },
+  { day: 3, label: 'T4', name: 'Thứ 4' },
+  { day: 4, label: 'T5', name: 'Thứ 5' },
+  { day: 5, label: 'T6', name: 'Thứ 6' },
+  { day: 6, label: 'T7', name: 'Thứ 7' },
+  { day: 0, label: 'CN', name: 'Chủ nhật' }
+];
+
+export const formatFrequencySummary = (habit: IHabitTracker): string => {
+  const freq = habit.frequency || 'DAILY';
+  if (freq === 'DAILY') return 'Hàng ngày';
+  if (freq === 'WEEKLY_TARGET') return `${habit.weeklyTarget || 3} lần / tuần`;
+  if (freq === 'WEEKLY_DAYS') {
+    const days = habit.targetDays || [0, 1, 2, 3, 4, 5, 6];
+    if (days.length === 7) return 'Cả tuần (7 ngày)';
+    if (days.length === 5 && [1, 2, 3, 4, 5].every(d => days.includes(d))) return 'T2 - T6 (Ngày đi làm)';
+    if (days.length === 2 && [0, 6].every(d => days.includes(d))) return 'Cuối tuần (T7, CN)';
+    
+    // Sort Monday (1) -> Sunday (0)
+    const sorted = [...days].sort((a, b) => {
+      const ordA = a === 0 ? 7 : a;
+      const ordB = b === 0 ? 7 : b;
+      return ordA - ordB;
+    });
+    return sorted.map(d => DAY_OPTIONS.find(o => o.day === d)?.label || `T${d}`).join(', ');
+  }
+  return 'Hàng ngày';
+};
+
+export const isHabitScheduledForDate = (habit: IHabitTracker, date: Date): boolean => {
+  const freq = habit.frequency || 'DAILY';
+  if (freq === 'DAILY' || freq === 'WEEKLY_TARGET') return true;
+  if (freq === 'WEEKLY_DAYS') {
+    const dayOfWeek = date.getDay();
+    const days = habit.targetDays || [0, 1, 2, 3, 4, 5, 6];
+    return days.includes(dayOfWeek);
+  }
+  return true;
+};
+
 // Ready-to-use habit templates
 const HABIT_PRESETS: Array<{
   title: string;
   unit: string;
   dailyTarget: number;
+  frequency?: HabitFrequency;
+  targetDays?: number[];
+  weeklyTarget?: number;
   icon: string;
   color: string;
   quickOptions: number[];
@@ -66,55 +114,64 @@ const HABIT_PRESETS: Array<{
     title: 'Uống nước mỗi ngày',
     unit: 'ml',
     dailyTarget: 2000,
+    frequency: 'DAILY',
     icon: 'water',
     color: '#06b6d4',
     quickOptions: [250, 500],
     description: 'Duy trì đủ nước cho cơ thể và trí não tỉnh táo'
   },
   {
+    title: 'Tập gym / Thể thao 3 buổi',
+    unit: 'phút',
+    dailyTarget: 45,
+    frequency: 'WEEKLY_TARGET',
+    weeklyTarget: 3,
+    icon: 'dumbbell',
+    color: '#10b981',
+    quickOptions: [15, 45],
+    description: 'Rèn luyện thể lực 3 buổi mỗi tuần'
+  },
+  {
+    title: 'Đi làm đúng giờ',
+    unit: 'lần',
+    dailyTarget: 1,
+    frequency: 'WEEKLY_DAYS',
+    targetDays: [1, 2, 3, 4, 5],
+    icon: 'zap',
+    color: '#3b82f6',
+    quickOptions: [1],
+    description: 'Duy trì thói quen chuẩn giờ các ngày làm việc T2-T6'
+  },
+  {
     title: 'Ngủ đủ giấc',
     unit: 'giờ',
     dailyTarget: 8,
+    frequency: 'DAILY',
     icon: 'moon',
     color: '#8b5cf6',
     quickOptions: [0.5, 1],
     description: 'Nạp lại năng lượng và phục hồi cơ thể'
   },
   {
-    title: 'Tập thể dục / Vận động',
-    unit: 'phút',
-    dailyTarget: 30,
-    icon: 'dumbbell',
-    color: '#10b981',
-    quickOptions: [15, 30],
-    description: 'Rèn luyện thể lực và giảm căng thẳng'
-  },
-  {
     title: 'Đọc sách phát triển',
     unit: 'trang',
     dailyTarget: 20,
+    frequency: 'DAILY',
     icon: 'book',
     color: '#f59e0b',
     quickOptions: [5, 10],
     description: 'Mở rộng kiến thức và duy trì thói quen đọc'
   },
   {
-    title: 'Đi bộ hàng ngày',
-    unit: 'bước',
-    dailyTarget: 6000,
-    icon: 'footprints',
-    color: '#3b82f6',
-    quickOptions: [1000, 2000],
-    description: 'Vận động nhẹ nhàng cải thiện tim mạch'
-  },
-  {
-    title: 'Hạn chế cà phê / trà',
-    unit: 'ly',
-    dailyTarget: 2,
-    icon: 'coffee',
+    title: 'Dọn dẹp nhà cuối tuần',
+    unit: 'lần',
+    dailyTarget: 1,
+    frequency: 'WEEKLY_DAYS',
+    targetDays: [6, 0],
+    icon: 'sparkles',
     color: '#ec4899',
     quickOptions: [1],
-    description: 'Kiểm soát lượng caffeine nạp vào cơ thể'
+    description: 'Sắp xếp gọn gàng không gian sống mỗi cuối tuần'
   }
 ];
 
@@ -130,6 +187,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
   const [title, setTitle] = useState('');
   const [unit, setUnit] = useState('lần');
   const [dailyTarget, setDailyTarget] = useState<number>(1);
+  const [frequency, setFrequency] = useState<HabitFrequency>('DAILY');
+  const [targetDays, setTargetDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [weeklyTarget, setWeeklyTarget] = useState<number>(3);
   const [icon, setIcon] = useState('sparkles');
   const [color, setColor] = useState('#6366f1');
   const [quickOptionsInput, setQuickOptionsInput] = useState('1, 2');
@@ -171,6 +231,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
   const [editTitle, setEditTitle] = useState('');
   const [editUnit, setEditUnit] = useState('lần');
   const [editDailyTarget, setEditDailyTarget] = useState<number>(1);
+  const [editFrequency, setEditFrequency] = useState<HabitFrequency>('DAILY');
+  const [editTargetDays, setEditTargetDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [editWeeklyTarget, setEditWeeklyTarget] = useState<number>(3);
   const [editIcon, setEditIcon] = useState('sparkles');
   const [editColor, setEditColor] = useState('#6366f1');
   const [editQuickOptionsInput, setEditQuickOptionsInput] = useState('1, 2');
@@ -224,6 +287,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
     setEditTitle(habit.title);
     setEditUnit(habit.unit);
     setEditDailyTarget(habit.dailyTarget);
+    setEditFrequency(habit.frequency || 'DAILY');
+    setEditTargetDays(Array.isArray(habit.targetDays) && habit.targetDays.length > 0 ? habit.targetDays : [1, 2, 3, 4, 5]);
+    setEditWeeklyTarget(habit.weeklyTarget || 3);
     setEditIcon(habit.icon || 'sparkles');
     setEditColor(habit.color || '#6366f1');
     setEditQuickOptionsInput((habit.quickOptions || []).join(', '));
@@ -255,6 +321,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
         title: editTitle.trim(),
         unit: editUnit.trim() || 'lần',
         dailyTarget: numTarget,
+        frequency: editFrequency,
+        targetDays: editFrequency === 'WEEKLY_DAYS' ? editTargetDays : undefined,
+        weeklyTarget: editFrequency === 'WEEKLY_TARGET' ? editWeeklyTarget : undefined,
         icon: editIcon,
         color: editColor,
         quickOptions: parsedQuick.length > 0 ? parsedQuick : [1, 5]
@@ -416,6 +485,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
         title: title.trim(),
         unit: unit.trim() || 'lần',
         dailyTarget: Number(dailyTarget) || 1,
+        frequency,
+        targetDays: frequency === 'WEEKLY_DAYS' ? targetDays : undefined,
+        weeklyTarget: frequency === 'WEEKLY_TARGET' ? weeklyTarget : undefined,
         icon,
         color,
         quickOptions: parsedQuick.length > 0 ? parsedQuick : [1, 5]
@@ -423,6 +495,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
 
       await HabitAPI.create(dto);
       setTitle('');
+      setFrequency('DAILY');
+      setTargetDays([1, 2, 3, 4, 5]);
+      setWeeklyTarget(3);
       onCloseCreateModal();
       onRefresh();
     } catch (err: any) {
@@ -437,12 +512,52 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
     setTitle(preset.title);
     setUnit(preset.unit);
     setDailyTarget(preset.dailyTarget);
+    setFrequency(preset.frequency || 'DAILY');
+    setTargetDays(preset.targetDays || [1, 2, 3, 4, 5]);
+    setWeeklyTarget(preset.weeklyTarget || 3);
     setIcon(preset.icon);
     setColor(preset.color);
     setQuickOptionsInput(preset.quickOptions.join(', '));
   };
 
+  // Helper: Calculate weekly progress for a habit
+  const getWeeklyProgress = (habit: IHabitTracker, targetDate: Date) => {
+    const d = new Date(targetDate);
+    const day = d.getDay();
+    const diffToMonday = (day === 0 ? 7 : day) - 1;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - diffToMonday);
+
+    let completedDaysCount = 0;
+    let totalValueThisWeek = 0;
+
+    for (let i = 0; i < 7; i++) {
+      const cur = new Date(monday);
+      cur.setDate(monday.getDate() + i);
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, '0');
+      const dayStr = String(cur.getDate()).padStart(2, '0');
+      const key = `${y}-${m}-${dayStr}`;
+
+      const val = getHabitValueForDate(habit, key);
+      totalValueThisWeek += val;
+      if (val >= habit.dailyTarget) {
+        completedDaysCount++;
+      }
+    }
+
+    const target = habit.weeklyTarget || 3;
+    return {
+      completedDaysCount,
+      totalValueThisWeek,
+      target,
+      isMet: completedDaysCount >= target,
+      percent: Math.min(100, Math.round((completedDaysCount / target) * 100))
+    };
+  };
+
   // Summary Metrics
+  const scheduledTodayHabits = habits.filter(h => isHabitScheduledForDate(h, selectedDate));
   const completedHabitsCount = habits.filter(h => getHabitValueForDate(h, selectedDateStr) >= h.dailyTarget).length;
   const totalHabitsCount = habits.length;
   const completionRate = totalHabitsCount > 0 ? Math.round((completedHabitsCount / totalHabitsCount) * 100) : 0;
@@ -736,10 +851,57 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                             <Flame size={isCompactLabels ? 10 : 12} /> {streak} ngày
                           </span>
                         )}
+                        <span style={{
+                          fontSize: isCompactLabels ? '0.65rem' : '0.72rem',
+                          fontWeight: 600,
+                          padding: '1px 6px',
+                          borderRadius: '9999px',
+                          background: 'rgba(99, 102, 241, 0.1)',
+                          border: '1px solid rgba(99, 102, 241, 0.25)',
+                          color: '#4f46e5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}>
+                          <Repeat size={isCompactLabels ? 10 : 12} /> {formatFrequencySummary(habit)}
+                        </span>
                       </div>
                       <div style={{ fontSize: isCompactLabels ? '0.72rem' : '0.78rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                         Mục tiêu: <strong style={{ color: 'var(--text-main)' }}>{habit.dailyTarget} {habit.unit}</strong>/ngày
                       </div>
+                      {/* Weekly frequency hints & stats */}
+                      {habit.frequency === 'WEEKLY_TARGET' && (() => {
+                        const wStats = getWeeklyProgress(habit, selectedDate);
+                        return (
+                          <div style={{
+                            fontSize: isCompactLabels ? '0.7rem' : '0.75rem',
+                            color: wStats.isMet ? '#16a34a' : 'var(--text-muted)',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            marginTop: '0.2rem'
+                          }}>
+                            <Target size={12} color={wStats.isMet ? '#16a34a' : habitColor} />
+                            <span>Tuần này: <strong>{wStats.completedDaysCount}/{wStats.target}</strong> lần {wStats.isMet && '✅'}</span>
+                          </div>
+                        );
+                      })()}
+                      {habit.frequency === 'WEEKLY_DAYS' && !isHabitScheduledForDate(habit, selectedDate) && (
+                        <div style={{
+                          fontSize: isCompactLabels ? '0.68rem' : '0.73rem',
+                          color: '#d97706',
+                          background: 'rgba(217, 119, 6, 0.08)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          marginTop: '0.2rem'
+                        }}>
+                          <span>☕ Ngày nghỉ theo lịch</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -953,6 +1115,193 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                     required
                   />
                 </div>
+              </div>
+
+              {/* Frequency Schedule Selector */}
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '0.85rem'
+              }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.55rem', fontWeight: 700 }}>
+                  <Repeat size={14} color="var(--accent-primary)" />
+                  <span>Tần suất thực hiện *</span>
+                </label>
+
+                {/* 3 Main Frequency Options */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.45rem', marginBottom: '0.75rem' }}>
+                  {[
+                    { id: 'DAILY', label: '🔄 Hàng ngày', desc: 'Mỗi ngày' },
+                    { id: 'WEEKLY_DAYS', label: '📅 Thứ trong tuần', desc: 'Chọn ngày cụ thể' },
+                    { id: 'WEEKLY_TARGET', label: '🎯 Số lần / tuần', desc: 'Mục tiêu tuần' }
+                  ].map(opt => {
+                    const isSelected = frequency === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setFrequency(opt.id as HabitFrequency)}
+                        style={{
+                          padding: '0.5rem 0.4rem',
+                          borderRadius: '6px',
+                          border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                          background: isSelected ? 'rgba(21, 128, 61, 0.08)' : 'var(--bg-main)',
+                          color: isSelected ? 'var(--accent-primary)' : 'var(--text-main)',
+                          fontWeight: isSelected ? 700 : 500,
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{opt.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Sub-view when WEEKLY_DAYS is selected */}
+                {frequency === 'WEEKLY_DAYS' && (
+                  <div style={{ background: 'rgba(0, 0, 0, 0.02)', padding: '0.65rem', borderRadius: '6px', border: '1px dashed var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem', flexWrap: 'wrap', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        Chọn ngày thực hiện:
+                      </span>
+                      {/* Quick day presets */}
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        {[
+                          { label: 'Cả tuần', days: [0, 1, 2, 3, 4, 5, 6] },
+                          { label: 'T2 - T6', days: [1, 2, 3, 4, 5] },
+                          { label: 'T7, CN', days: [6, 0] },
+                          { label: 'T2, T4, T6, CN', days: [1, 3, 5, 0] }
+                        ].map(preset => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => setTargetDays(preset.days)}
+                            style={{
+                              fontSize: '0.68rem',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-card)',
+                              color: 'var(--text-muted)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 7 Days Toggle Buttons */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.3rem' }}>
+                      {DAY_OPTIONS.map(opt => {
+                        const isDaySelected = targetDays.includes(opt.day);
+                        return (
+                          <button
+                            key={opt.day}
+                            type="button"
+                            onClick={() => {
+                              if (isDaySelected) {
+                                if (targetDays.length > 1) {
+                                  setTargetDays(targetDays.filter(d => d !== opt.day));
+                                }
+                              } else {
+                                setTargetDays([...targetDays, opt.day]);
+                              }
+                            }}
+                            style={{
+                              padding: '0.45rem 0',
+                              borderRadius: '6px',
+                              border: isDaySelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                              background: isDaySelected ? 'var(--accent-primary)' : 'var(--bg-card)',
+                              color: isDaySelected ? '#ffffff' : 'var(--text-main)',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer',
+                              textAlign: 'center'
+                            }}
+                            title={opt.name}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-view when WEEKLY_TARGET is selected */}
+                {frequency === 'WEEKLY_TARGET' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0, 0, 0, 0.02)', padding: '0.65rem', borderRadius: '6px', border: '1px dashed var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Mục tiêu hoàn thành:
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setWeeklyTarget(prev => Math.max(1, prev - 1))}
+                        style={{
+                          padding: '0.2rem 0.45rem',
+                          borderRadius: '4px 0 0 4px',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-card)',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="7"
+                        value={weeklyTarget}
+                        onChange={e => setWeeklyTarget(Math.min(7, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                        style={{
+                          width: '40px',
+                          textAlign: 'center',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          padding: '0.2rem',
+                          borderTop: '1px solid var(--border-color)',
+                          borderBottom: '1px solid var(--border-color)',
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          outline: 'none',
+                          background: 'var(--bg-main)',
+                          color: 'var(--text-main)'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setWeeklyTarget(prev => Math.min(7, prev + 1))}
+                        style={{
+                          padding: '0.2rem 0.45rem',
+                          borderRadius: '0 4px 4px 0',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-card)',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      lần / tuần (T2 - CN)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1279,6 +1628,193 @@ export const HabitsView: React.FC<HabitsViewProps> = ({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Frequency Schedule Selector */}
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '0.85rem'
+              }}>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.55rem', fontWeight: 700 }}>
+                  <Repeat size={14} color="var(--accent-primary)" />
+                  <span>Tần suất thực hiện *</span>
+                </label>
+
+                {/* 3 Main Frequency Options */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.45rem', marginBottom: '0.75rem' }}>
+                  {[
+                    { id: 'DAILY', label: '🔄 Hàng ngày', desc: 'Mỗi ngày' },
+                    { id: 'WEEKLY_DAYS', label: '📅 Thứ trong tuần', desc: 'Chọn ngày cụ thể' },
+                    { id: 'WEEKLY_TARGET', label: '🎯 Số lần / tuần', desc: 'Mục tiêu tuần' }
+                  ].map(opt => {
+                    const isSelected = editFrequency === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setEditFrequency(opt.id as HabitFrequency)}
+                        style={{
+                          padding: '0.5rem 0.4rem',
+                          borderRadius: '6px',
+                          border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                          background: isSelected ? 'rgba(21, 128, 61, 0.08)' : 'var(--bg-main)',
+                          color: isSelected ? 'var(--accent-primary)' : 'var(--text-main)',
+                          fontWeight: isSelected ? 700 : 500,
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <span>{opt.label}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{opt.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Sub-view when WEEKLY_DAYS is selected */}
+                {editFrequency === 'WEEKLY_DAYS' && (
+                  <div style={{ background: 'rgba(0, 0, 0, 0.02)', padding: '0.65rem', borderRadius: '6px', border: '1px dashed var(--border-color)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem', flexWrap: 'wrap', gap: '0.35rem' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                        Chọn ngày thực hiện:
+                      </span>
+                      {/* Quick day presets */}
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        {[
+                          { label: 'Cả tuần', days: [0, 1, 2, 3, 4, 5, 6] },
+                          { label: 'T2 - T6', days: [1, 2, 3, 4, 5] },
+                          { label: 'T7, CN', days: [6, 0] },
+                          { label: 'T2, T4, T6, CN', days: [1, 3, 5, 0] }
+                        ].map(preset => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => setEditTargetDays(preset.days)}
+                            style={{
+                              fontSize: '0.68rem',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--border-color)',
+                              background: 'var(--bg-card)',
+                              color: 'var(--text-muted)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 7 Days Toggle Buttons */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.3rem' }}>
+                      {DAY_OPTIONS.map(opt => {
+                        const isDaySelected = editTargetDays.includes(opt.day);
+                        return (
+                          <button
+                            key={opt.day}
+                            type="button"
+                            onClick={() => {
+                              if (isDaySelected) {
+                                if (editTargetDays.length > 1) {
+                                  setEditTargetDays(editTargetDays.filter(d => d !== opt.day));
+                                }
+                              } else {
+                                setEditTargetDays([...editTargetDays, opt.day]);
+                              }
+                            }}
+                            style={{
+                              padding: '0.45rem 0',
+                              borderRadius: '6px',
+                              border: isDaySelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                              background: isDaySelected ? 'var(--accent-primary)' : 'var(--bg-card)',
+                              color: isDaySelected ? '#ffffff' : 'var(--text-main)',
+                              fontWeight: 700,
+                              fontSize: '0.75rem',
+                              cursor: 'pointer',
+                              textAlign: 'center'
+                            }}
+                            title={opt.name}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-view when WEEKLY_TARGET is selected */}
+                {editFrequency === 'WEEKLY_TARGET' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0, 0, 0, 0.02)', padding: '0.65rem', borderRadius: '6px', border: '1px dashed var(--border-color)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      Mục tiêu hoàn thành:
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditWeeklyTarget(prev => Math.max(1, prev - 1))}
+                        style={{
+                          padding: '0.2rem 0.45rem',
+                          borderRadius: '4px 0 0 4px',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-card)',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="7"
+                        value={editWeeklyTarget}
+                        onChange={e => setEditWeeklyTarget(Math.min(7, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                        style={{
+                          width: '40px',
+                          textAlign: 'center',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          padding: '0.2rem',
+                          borderTop: '1px solid var(--border-color)',
+                          borderBottom: '1px solid var(--border-color)',
+                          borderLeft: 'none',
+                          borderRight: 'none',
+                          outline: 'none',
+                          background: 'var(--bg-main)',
+                          color: 'var(--text-main)'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditWeeklyTarget(prev => Math.min(7, prev + 1))}
+                        style={{
+                          padding: '0.2rem 0.45rem',
+                          borderRadius: '0 4px 4px 0',
+                          border: '1px solid var(--border-color)',
+                          background: 'var(--bg-card)',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      lần / tuần (T2 - CN)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div>

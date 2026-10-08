@@ -168,9 +168,9 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ success: false, error: 'Số tiền không hợp lệ' });
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date());
     const date = dto.date || todayStr;
-    const time = dto.time || new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const time = dto.time || new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
     const timeSlot = dto.timeSlot || autoDetectTimeSlot(time);
 
     if (isDbConnected()) {
@@ -180,6 +180,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
         amount: Number(dto.amount),
         type: dto.type || 'EXPENSE',
         category: dto.category ? dto.category.trim() : 'Khác',
+        tags: Array.isArray(dto.tags) ? dto.tags.map(t => t.trim()).filter(Boolean) : [],
         timeSlot,
         date,
         time,
@@ -210,6 +211,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
       if (dto.amount !== undefined) existing.amount = Number(dto.amount);
       if (dto.type !== undefined) existing.type = dto.type;
       if (dto.category !== undefined) existing.category = dto.category.trim();
+      if (dto.tags !== undefined) existing.tags = Array.isArray(dto.tags) ? dto.tags.map(t => t.trim()).filter(Boolean) : [];
       if (dto.timeSlot !== undefined) existing.timeSlot = dto.timeSlot;
       if (dto.date !== undefined) existing.date = dto.date;
       if (dto.time !== undefined) existing.time = dto.time;

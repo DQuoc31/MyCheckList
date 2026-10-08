@@ -32,7 +32,9 @@ import {
   ChevronRight,
   Layers,
   PieChart,
-  Flame
+  Flame,
+  Check,
+  Hash
 } from 'lucide-react';
 import { TransactionAPI } from '../services/api';
 
@@ -69,6 +71,22 @@ const CATEGORIES = {
     'Khác'
   ]
 };
+
+const SUGGESTED_TAGS = [
+  'Cà phê',
+  'Siêu thị',
+  'Xăng xe',
+  'Ăn ngoài',
+  'Tiền nhà',
+  'Điện nước',
+  'Học phí',
+  'Quần áo',
+  'Thuốc men',
+  'Lương cứng',
+  'Thưởng',
+  'Dự án ngoài',
+  'Tết'
+];
 
 const formatVND = (amount: number): string => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -133,15 +151,35 @@ interface IMonthlyFinanceStats {
   slotStats: Record<TimeOfDaySlot, { income: number; expense: number; count: number }>;
 }
 
+const formatLocalDate = (d: Date = new Date()): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const formatLocalMonth = (d: Date = new Date()): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+};
+
 export const FinancesView: React.FC<FinancesViewProps> = ({
   transactions,
   onRefresh,
   showCreateModal = false,
   onCloseCreateModal
 }) => {
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [currentClock, setCurrentClock] = useState<Date>(new Date());
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentClock(new Date());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const todayStr = useMemo(() => formatLocalDate(currentClock), [currentClock]);
+  const currentMonthStr = useMemo(() => formatLocalMonth(currentClock), [currentClock]);
 
   // View mode: DAY vs MONTH
   const [activeTab, setActiveTab] = useState<FinanceViewTab>('DAY');
@@ -149,15 +187,16 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
   const [tableSort, setTableSort] = useState<TableSortField>('DATE_ASC');
 
   // Day View State
-  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [selectedDate, setSelectedDate] = useState<string>(() => formatLocalDate(new Date()));
   const [isAllDates, setIsAllDates] = useState<boolean>(false);
   const [selectedSlotFilter, setSelectedSlotFilter] = useState<TimeOfDaySlot | 'ALL'>('ALL');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<TransactionType | 'ALL'>('ALL');
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Month View State
-  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
-  const [selectedMonthDay, setSelectedMonthDay] = useState<string>(todayStr);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => formatLocalMonth(new Date()));
+  const [selectedMonthDay, setSelectedMonthDay] = useState<string>(() => formatLocalDate(new Date()));
   const [chartMetric, setChartMetric] = useState<'BOTH' | 'EXPENSE' | 'INCOME'>('BOTH');
 
   // Modals
@@ -169,14 +208,49 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
   const [formTitle, setFormTitle] = useState('');
   const [formAmount, setFormAmount] = useState<string>('');
   const [formCategory, setFormCategory] = useState('Ăn uống');
+  const [formTags, setFormTags] = useState<string[]>([]);
+  const [formTagInput, setFormTagInput] = useState('');
   const [formTimeSlot, setFormTimeSlot] = useState<TimeOfDaySlot>('MORNING');
-  const [formDate, setFormDate] = useState(todayStr);
+  const [formDate, setFormDate] = useState(() => formatLocalDate(new Date()));
   const [formTime, setFormTime] = useState('');
   const [formNote, setFormNote] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isModalVisible = showCreateModal || internalModalOpen || !!editingItem;
+
+  // Auto-collect unique tags and categories across all transactions for quick filter pills
+  const allAvailableTags = useMemo(() => {
+    const tagCountMap: Record<string, { count: number; isCategory: boolean }> = {};
+
+    transactions.forEach(tx => {
+      if (tx.category) {
+        if (!tagCountMap[tx.category]) {
+          tagCountMap[tx.category] = { count: 0, isCategory: true };
+        }
+        tagCountMap[tx.category].count += 1;
+      }
+      if (Array.isArray(tx.tags)) {
+        tx.tags.forEach(tag => {
+          const cleanTag = tag.trim();
+          if (cleanTag && cleanTag !== tx.category) {
+            if (!tagCountMap[cleanTag]) {
+              tagCountMap[cleanTag] = { count: 0, isCategory: false };
+            }
+            tagCountMap[cleanTag].count += 1;
+          }
+        });
+      }
+    });
+
+    return Object.entries(tagCountMap)
+      .map(([name, meta]) => ({
+        name,
+        count: meta.count,
+        isCategory: meta.isCategory
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [transactions]);
 
   const autoDetectSlot = (timeStr?: string): TimeOfDaySlot => {
     let hour = new Date().getHours();
@@ -200,6 +274,8 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
     setFormTitle('');
     setFormAmount('');
     setFormCategory('Ăn uống');
+    setFormTags([]);
+    setFormTagInput('');
     setFormTimeSlot(detected);
     setFormDate(datePreset || (activeTab === 'DAY' ? selectedDate : selectedMonthDay || todayStr));
     setFormTime(currentTime);
@@ -214,6 +290,8 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
     setFormTitle(item.title);
     setFormAmount(item.amount.toString());
     setFormCategory(item.category || 'Khác');
+    setFormTags(Array.isArray(item.tags) ? [...item.tags] : []);
+    setFormTagInput('');
     setFormTimeSlot(item.timeSlot || 'MORNING');
     setFormDate(item.date || todayStr);
     setFormTime(item.time || '');
@@ -226,6 +304,19 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
     setInternalModalOpen(false);
     setEditingItem(null);
     if (onCloseCreateModal) onCloseCreateModal();
+  };
+
+  const handleAddTag = (rawTag: string) => {
+    const clean = rawTag.trim().replace(/^#+/, '');
+    if (!clean) return;
+    if (!formTags.includes(clean)) {
+      setFormTags([...formTags, clean]);
+    }
+    setFormTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormTags(formTags.filter(t => t !== tagToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -244,12 +335,22 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       setIsSubmitting(true);
       setFormError('');
 
+      // Add any lingering tag in tag input
+      const finalTags = [...formTags];
+      if (formTagInput.trim()) {
+        const clean = formTagInput.trim().replace(/^#+/, '');
+        if (clean && !finalTags.includes(clean)) {
+          finalTags.push(clean);
+        }
+      }
+
       if (editingItem && editingItem.id) {
         const dto: UpdateTransactionDto = {
           title: formTitle.trim(),
           amount: numAmount,
           type: formType,
           category: formCategory,
+          tags: finalTags,
           timeSlot: formTimeSlot,
           date: formDate,
           time: formTime,
@@ -262,6 +363,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
           amount: numAmount,
           type: formType,
           category: formCategory,
+          tags: finalTags,
           timeSlot: formTimeSlot,
           date: formDate,
           time: formTime,
@@ -307,6 +409,12 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
     };
 
     filteredByDate.forEach(t => {
+      // Check tag filter
+      if (selectedTagFilter !== 'ALL') {
+        const hasTagMatch = t.category === selectedTagFilter || (Array.isArray(t.tags) && t.tags.includes(selectedTagFilter));
+        if (!hasTagMatch) return;
+      }
+
       const amt = Number(t.amount) || 0;
       const slot = (t.timeSlot && slots[t.timeSlot]) ? t.timeSlot : 'MORNING';
       slots[slot].count += 1;
@@ -326,27 +434,33 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       balance: income - expense,
       slots
     };
-  }, [filteredByDate]);
+  }, [filteredByDate, selectedTagFilter]);
 
   const displayTransactions = useMemo(() => {
     return filteredByDate.filter(t => {
       if (selectedSlotFilter !== 'ALL' && t.timeSlot !== selectedSlotFilter) return false;
       if (selectedTypeFilter !== 'ALL' && t.type !== selectedTypeFilter) return false;
+      if (selectedTagFilter !== 'ALL') {
+        const matchesCat = t.category === selectedTagFilter;
+        const matchesTags = Array.isArray(t.tags) && t.tags.includes(selectedTagFilter);
+        if (!matchesCat && !matchesTags) return false;
+      }
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchTitle = t.title.toLowerCase().includes(query);
         const matchCategory = (t.category || '').toLowerCase().includes(query);
         const matchNote = (t.note || '').toLowerCase().includes(query);
-        if (!matchTitle && !matchCategory && !matchNote) return false;
+        const matchTags = Array.isArray(t.tags) && t.tags.some(tag => tag.toLowerCase().includes(query));
+        if (!matchTitle && !matchCategory && !matchNote && !matchTags) return false;
       }
       return true;
     });
-  }, [filteredByDate, selectedSlotFilter, selectedTypeFilter, searchQuery]);
+  }, [filteredByDate, selectedSlotFilter, selectedTypeFilter, selectedTagFilter, searchQuery]);
 
   const changeDateBy = (offset: number) => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() + offset);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const nextDate = new Date(y, m - 1, d + offset);
+    setSelectedDate(formatLocalDate(nextDate));
     setIsAllDates(false);
   };
 
@@ -354,7 +468,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
   const changeMonthBy = (offset: number) => {
     const [year, month] = selectedMonth.split('-').map(Number);
     const d = new Date(year, month - 1 + offset, 1);
-    const newMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const newMonthStr = formatLocalMonth(d);
     setSelectedMonth(newMonthStr);
     setSelectedMonthDay(`${newMonthStr}-01`);
   };
@@ -413,6 +527,12 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
 
     transactions.forEach(tx => {
       if (tx.date && tx.date.startsWith(selectedMonth)) {
+        // Tag filter check for month view
+        if (selectedTagFilter !== 'ALL') {
+          const hasTagMatch = tx.category === selectedTagFilter || (Array.isArray(tx.tags) && tx.tags.includes(selectedTagFilter));
+          if (!hasTagMatch) return;
+        }
+
         const amt = Number(tx.amount) || 0;
         const dayRecord = dailyMap[tx.date];
         if (dayRecord) {
@@ -486,7 +606,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       categoryStats,
       slotStats
     };
-  }, [transactions, selectedMonth, monthInfo]);
+  }, [transactions, selectedMonth, monthInfo, selectedTagFilter]);
 
   // Sorted list for Table view
   const sortedMonthDays = useMemo(() => {
@@ -529,7 +649,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* View Switcher Header */}
       <div style={{
         display: 'flex',
@@ -549,8 +669,8 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
           </h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
             {activeTab === 'DAY'
-              ? 'Theo dõi chi tiết các khoản thu chi theo 4 ca trong ngày (Sáng, Chiều, Tối, Đêm)'
-              : 'So sánh bức tranh tổng quan thu chi giữa các ngày trong tháng, phát hiện ngày chi tiêu đỉnh điểm'}
+              ? 'Theo dõi chi tiết các khoản thu chi theo 4 ca trong ngày và lọc nhanh theo tag/danh mục'
+              : 'So sánh bức tranh tổng quan thu chi giữa các ngày trong tháng, phân tích chi tiêu theo tag/danh mục'}
           </p>
         </div>
 
@@ -601,10 +721,97 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
+      {/* ----------------- QUICK TAG / CATEGORY FILTER BAR ----------------------- */}
+      {/* ========================================================================= */}
+      <div className="glass-card" style={{ padding: '0.65rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--accent-primary)', fontSize: '0.82rem', fontWeight: 600, marginRight: '0.25rem' }}>
+          <Tag size={15} /> Lọc theo Tag:
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', flex: 1 }}>
+          <button
+            onClick={() => setSelectedTagFilter('ALL')}
+            style={{
+              padding: '0.25rem 0.65rem',
+              borderRadius: '16px',
+              border: selectedTagFilter === 'ALL' ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+              background: selectedTagFilter === 'ALL' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+              color: selectedTagFilter === 'ALL' ? '#fff' : 'var(--text-main)',
+              fontSize: '0.78rem',
+              fontWeight: selectedTagFilter === 'ALL' ? 700 : 500,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <span>Tất cả</span>
+            <span style={{
+              fontSize: '0.68rem',
+              background: selectedTagFilter === 'ALL' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.06)',
+              padding: '1px 5px',
+              borderRadius: '10px'
+            }}>
+              {transactions.length}
+            </span>
+          </button>
+
+          {allAvailableTags.map((item) => {
+            const isSelected = selectedTagFilter === item.name;
+            return (
+              <button
+                key={item.name}
+                onClick={() => setSelectedTagFilter(isSelected ? 'ALL' : item.name)}
+                style={{
+                  padding: '0.25rem 0.65rem',
+                  borderRadius: '16px',
+                  border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                  background: isSelected ? 'rgba(21, 128, 61, 0.15)' : 'var(--bg-secondary)',
+                  color: isSelected ? 'var(--accent-primary)' : 'var(--text-main)',
+                  fontSize: '0.78rem',
+                  fontWeight: isSelected ? 700 : 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Hash size={12} style={{ opacity: isSelected ? 1 : 0.6 }} />
+                <span>{item.name}</span>
+                <span style={{
+                  fontSize: '0.68rem',
+                  background: isSelected ? 'var(--accent-primary)' : 'rgba(0,0,0,0.06)',
+                  color: isSelected ? '#fff' : 'var(--text-dim)',
+                  padding: '1px 5px',
+                  borderRadius: '10px'
+                }}>
+                  {item.count}
+                </span>
+                {isSelected && <X size={12} style={{ marginLeft: '2px' }} />}
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedTagFilter !== 'ALL' && (
+          <button
+            onClick={() => setSelectedTagFilter('ALL')}
+            className="btn-icon"
+            title="Bỏ lọc tag"
+            style={{ fontSize: '0.75rem', color: 'var(--accent-danger)', padding: '0.2rem 0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+          >
+            <X size={14} /> Xóa lọc
+          </button>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
       {/* ---------------------------- VIEW THEO NGÀY ----------------------------- */}
       {/* ========================================================================= */}
       {activeTab === 'DAY' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Day Header Bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -678,7 +885,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-success)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Tổng Thu Nhập
+                  Tổng Thu Nhập {selectedTagFilter !== 'ALL' ? `(${selectedTagFilter})` : ''}
                 </span>
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(21, 128, 61, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-success)' }}>
                   <ArrowUpRight size={18} />
@@ -695,7 +902,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-danger)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Tổng Chi Tiêu
+                  Tổng Chi Tiêu {selectedTagFilter !== 'ALL' ? `(${selectedTagFilter})` : ''}
                 </span>
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-danger)' }}>
                   <ArrowDownRight size={18} />
@@ -840,7 +1047,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
               <Filter size={16} color="var(--text-dim)" />
               <input
                 type="text"
-                placeholder="Tìm theo tên khoản chi, danh mục, ghi chú..."
+                placeholder="Tìm theo tên khoản chi, danh mục, #tag, ghi chú..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
@@ -860,7 +1067,20 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Khung giờ:</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tag/Danh mục:</span>
+              <select
+                value={selectedTagFilter}
+                onChange={(e) => setSelectedTagFilter(e.target.value)}
+                className="form-input"
+                style={{ width: 'auto', padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+              >
+                <option value="ALL">Tất cả Tag ({transactions.length})</option>
+                {allAvailableTags.map(item => (
+                  <option key={item.name} value={item.name}>#{item.name} ({item.count})</option>
+                ))}
+              </select>
+
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>Khung giờ:</span>
               <select
                 value={selectedSlotFilter}
                 onChange={(e) => setSelectedSlotFilter(e.target.value as any)}
@@ -894,7 +1114,9 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
               <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Wallet size={40} style={{ margin: '0 auto 1rem', opacity: 0.4 }} />
                 <p style={{ fontSize: '1rem', color: 'var(--text-main)', marginBottom: '0.5rem', fontWeight: 600 }}>Chưa có giao dịch nào trong khoảng thời gian này</p>
-                <p style={{ fontSize: '0.85rem' }}>Nhấn "+ Thêm Giao Dịch" để ghi chép các khoản thu chi trong ngày</p>
+                <p style={{ fontSize: '0.85rem' }}>
+                  {selectedTagFilter !== 'ALL' ? `Không tìm thấy giao dịch với tag "${selectedTagFilter}".` : 'Nhấn "+ Thêm Giao Dịch" để ghi chép các khoản thu chi trong ngày'}
+                </p>
                 <button
                   onClick={() => handleOpenCreate()}
                   className="btn btn-primary"
@@ -938,14 +1160,46 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                         {isIncome ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)' }}>
                             {tx.title}
                           </span>
-                          <span className="tag-pill" style={{ fontSize: '0.7rem' }}>
+
+                          {/* Category Badge - Clickable to filter */}
+                          <button
+                            onClick={() => setSelectedTagFilter(tx.category)}
+                            className="tag-pill"
+                            title={`Lọc theo danh mục ${tx.category}`}
+                            style={{
+                              fontSize: '0.7rem',
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: selectedTagFilter === tx.category ? 'var(--accent-primary)' : undefined,
+                              color: selectedTagFilter === tx.category ? '#fff' : undefined
+                            }}
+                          >
                             <Tag size={10} /> {tx.category}
-                          </span>
+                          </button>
+
+                          {/* Custom Tag Chips - Clickable to filter */}
+                          {Array.isArray(tx.tags) && tx.tags.map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => setSelectedTagFilter(tag)}
+                              className="tag-pill"
+                              title={`Lọc theo tag #${tag}`}
+                              style={{
+                                fontSize: '0.68rem',
+                                border: '1px solid rgba(21, 128, 61, 0.2)',
+                                cursor: 'pointer',
+                                background: selectedTagFilter === tag ? 'var(--accent-primary)' : 'rgba(21, 128, 61, 0.08)',
+                                color: selectedTagFilter === tag ? '#fff' : 'var(--accent-primary)'
+                              }}
+                            >
+                              <Hash size={10} /> {tag}
+                            </button>
+                          ))}
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -1011,7 +1265,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
       {/* --------------------------- VIEW THEO THÁNG ----------------------------- */}
       {/* ========================================================================= */}
       {activeTab === 'MONTH' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* Month Navigation & Controls Bar */}
           <div style={{
             display: 'flex',
@@ -1081,6 +1335,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
 
               <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginLeft: '0.25rem' }}>
                 {monthlyData.activeDaysCount}/{monthInfo.totalDays} ngày có phát sinh giao dịch
+                {selectedTagFilter !== 'ALL' && <strong style={{ color: 'var(--accent-primary)', marginLeft: '4px' }}>[Lọc theo #{selectedTagFilter}]</strong>}
               </span>
             </div>
 
@@ -1139,7 +1394,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-success)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Tổng Thu Nhập Tháng
+                  Tổng Thu Nhập Tháng {selectedTagFilter !== 'ALL' ? `(#${selectedTagFilter})` : ''}
                 </span>
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(21, 128, 61, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-success)' }}>
                   <ArrowUpRight size={18} />
@@ -1157,7 +1412,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
             <div className="glass-card" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-danger)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  Tổng Chi Tiêu Tháng
+                  Tổng Chi Tiêu Tháng {selectedTagFilter !== 'ALL' ? `(#${selectedTagFilter})` : ''}
                 </span>
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-danger)' }}>
                   <ArrowDownRight size={18} />
@@ -1215,6 +1470,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                 <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <BarChart3 size={18} color="var(--accent-primary)" />
                   Biểu Đồ So Sánh Các Ngày Trong {monthInfo.monthLabel}
+                  {selectedTagFilter !== 'ALL' && <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 500 }}>[#{selectedTagFilter}]</span>}
                 </h3>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                   Nhấn vào từng cột ngày để xem chi tiết danh sách thu chi bên dưới
@@ -1750,9 +2006,39 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                           </div>
 
                           <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>{tx.title}</span>
-                              <span className="tag-pill" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>{tx.category}</span>
+                              <button
+                                onClick={() => setSelectedTagFilter(tx.category)}
+                                className="tag-pill"
+                                style={{
+                                  fontSize: '0.68rem',
+                                  padding: '1px 6px',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  background: selectedTagFilter === tx.category ? 'var(--accent-primary)' : undefined,
+                                  color: selectedTagFilter === tx.category ? '#fff' : undefined
+                                }}
+                              >
+                                {tx.category}
+                              </button>
+                              {Array.isArray(tx.tags) && tx.tags.map(tag => (
+                                <button
+                                  key={tag}
+                                  onClick={() => setSelectedTagFilter(tag)}
+                                  className="tag-pill"
+                                  style={{
+                                    fontSize: '0.65rem',
+                                    padding: '1px 5px',
+                                    border: '1px solid rgba(21, 128, 61, 0.2)',
+                                    cursor: 'pointer',
+                                    background: selectedTagFilter === tag ? 'var(--accent-primary)' : 'rgba(21, 128, 61, 0.08)',
+                                    color: selectedTagFilter === tag ? '#fff' : 'var(--accent-primary)'
+                                  }}
+                                >
+                                  #{tag}
+                                </button>
+                              ))}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                               <span style={{ color: slotConfig.color, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
@@ -2069,7 +2355,7 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
-                    Danh mục
+                    Danh mục chính
                   </label>
                   <select
                     value={formCategory}
@@ -2092,6 +2378,92 @@ export const FinancesView: React.FC<FinancesViewProps> = ({
                     onChange={(e) => setFormDate(e.target.value)}
                     className="form-input"
                   />
+                </div>
+              </div>
+
+              {/* Tags / Nhãn tùy chỉnh */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                  Tags / Nhãn bổ sung (tùy chọn)
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <input
+                      type="text"
+                      placeholder="Nhập tag (ví dụ: cà phê, tiền nhà...) rồi ấn Thêm"
+                      value={formTagInput}
+                      onChange={(e) => setFormTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag(formTagInput);
+                        }
+                      }}
+                      className="form-input"
+                      style={{ paddingLeft: '2rem' }}
+                    />
+                    <Hash size={14} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddTag(formTagInput)}
+                    className="btn btn-secondary"
+                    style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                  >
+                    Thêm tag
+                  </button>
+                </div>
+
+                {/* Selected Tags list */}
+                {formTags.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                    {formTags.map(tag => (
+                      <span
+                        key={tag}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          background: 'rgba(21, 128, 61, 0.12)',
+                          color: 'var(--accent-primary)',
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600
+                        }}
+                      >
+                        #{tag}
+                        <X
+                          size={12}
+                          onClick={() => handleRemoveTag(tag)}
+                          style={{ cursor: 'pointer', opacity: 0.7 }}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick suggestions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                  <span>Gợi ý:</span>
+                  {SUGGESTED_TAGS.slice(0, 6).map(st => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => handleAddTag(st)}
+                      style={{
+                        background: formTags.includes(st) ? 'var(--accent-primary)' : 'rgba(0,0,0,0.05)',
+                        color: formTags.includes(st) ? '#fff' : 'var(--text-muted)',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '1px 6px',
+                        cursor: 'pointer',
+                        fontSize: '0.7rem'
+                      }}
+                    >
+                      +{st}
+                    </button>
+                  ))}
                 </div>
               </div>
 

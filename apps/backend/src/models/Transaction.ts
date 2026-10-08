@@ -15,6 +15,7 @@ const TransactionSchema = new Schema<ITransactionDocument>(
       default: 'EXPENSE' 
     },
     category: { type: String, required: true, trim: true, default: 'Khác' },
+    tags: { type: [String], default: [] },
     timeSlot: { 
       type: String, 
       enum: ['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT'], 

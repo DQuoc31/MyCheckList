@@ -82,6 +82,8 @@ export interface IHabitLogEntry {
   value: number; // Consumption or frequency amount (e.g. 2000 ml, 8 hours, 3 times)
 }
 
+export type HabitFrequency = 'DAILY' | 'WEEKLY_DAYS' | 'WEEKLY_TARGET';
+
 // Habit / Daily Activity Tracker Model
 export interface IHabitTracker {
   _id?: string;
@@ -92,6 +94,9 @@ export interface IHabitTracker {
   color?: string;
   unit: string; // ml, giờ, phút, ly, km, bước, lần, trang
   dailyTarget: number; // Target per day (e.g. 2000, 8, 30)
+  frequency?: HabitFrequency; // 'DAILY' | 'WEEKLY_DAYS' | 'WEEKLY_TARGET'
+  targetDays?: number[]; // [0, 1, 2, 3, 4, 5, 6] (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  weeklyTarget?: number; // e.g. 3 times per week
   quickOptions?: number[]; // Preset quick addition values, e.g. [250, 500] for water
   history: IHabitLogEntry[];
   createdAt?: string;
@@ -133,6 +138,9 @@ export interface CreateHabitDto {
   dailyTarget: number;
   icon?: string;
   color?: string;
+  frequency?: HabitFrequency;
+  targetDays?: number[];
+  weeklyTarget?: number;
   quickOptions?: number[];
 }
 
@@ -210,6 +218,7 @@ export interface ITransaction {
   amount: number;
   type: TransactionType;
   category: string;
+  tags?: string[];
   timeSlot: TimeOfDaySlot;
   date: string; // YYYY-MM-DD
   time?: string; // HH:mm
@@ -223,6 +232,7 @@ export interface CreateTransactionDto {
   amount: number;
   type: TransactionType;
   category?: string;
+  tags?: string[];
   timeSlot?: TimeOfDaySlot;
   date?: string;
   time?: string;

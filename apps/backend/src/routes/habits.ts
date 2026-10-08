@@ -53,6 +53,9 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
         title: dto.title.trim(),
         unit: dto.unit.trim(),
         dailyTarget: Math.max(1, Number(dto.dailyTarget)),
+        frequency: dto.frequency || 'DAILY',
+        targetDays: Array.isArray(dto.targetDays) && dto.targetDays.length > 0 ? dto.targetDays : [0, 1, 2, 3, 4, 5, 6],
+        weeklyTarget: dto.weeklyTarget ? Math.max(1, Number(dto.weeklyTarget)) : 1,
         icon: dto.icon || 'sparkles',
         color: dto.color || '#6366f1',
         quickOptions: dto.quickOptions || [1, 5],
@@ -81,6 +84,9 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
       if (dto.title !== undefined) habit.title = dto.title.trim();
       if (dto.unit !== undefined) habit.unit = dto.unit.trim();
       if (dto.dailyTarget !== undefined) habit.dailyTarget = Math.max(1, Number(dto.dailyTarget));
+      if (dto.frequency !== undefined) habit.frequency = dto.frequency;
+      if (dto.targetDays !== undefined) habit.targetDays = dto.targetDays;
+      if (dto.weeklyTarget !== undefined) habit.weeklyTarget = Math.max(1, Number(dto.weeklyTarget));
       if (dto.icon !== undefined) habit.icon = dto.icon;
       if (dto.color !== undefined) habit.color = dto.color;
       if (dto.quickOptions !== undefined) habit.quickOptions = dto.quickOptions;

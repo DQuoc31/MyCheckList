@@ -52,6 +52,10 @@ export const calculateTaskAnalytics = (tasks: ITask[] | any[], eventsCount: numb
   };
 };
 
+const getVNLocalDateStr = (d: Date = new Date()): string => {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(d);
+};
+
 export const calculateHabitAnalytics = (habits: any[], todayDateStr: string): HabitAnalyticsSummary => {
   const totalHabits = habits.length;
   let todayCompletedCount = 0;
@@ -76,15 +80,15 @@ export const calculateHabitAnalytics = (habits: any[], todayDateStr: string): Ha
       .map((e: any) => e.date);
 
     const checkDate = new Date();
-    let checkStr = checkDate.toISOString().split('T')[0];
+    let checkStr = getVNLocalDateStr(checkDate);
     if (todayValue < dailyTarget) {
       checkDate.setDate(checkDate.getDate() - 1);
-      checkStr = checkDate.toISOString().split('T')[0];
+      checkStr = getVNLocalDateStr(checkDate);
     }
     while (completedDates.includes(checkStr)) {
       streak += 1;
       checkDate.setDate(checkDate.getDate() - 1);
-      checkStr = checkDate.toISOString().split('T')[0];
+      checkStr = getVNLocalDateStr(checkDate);
     }
 
     return {
@@ -113,7 +117,7 @@ export const calculateHabitAnalytics = (habits: any[], todayDateStr: string): Ha
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.userId;
-    const todayDateStr = new Date().toISOString().split('T')[0];
+    const todayDateStr = getVNLocalDateStr(new Date());
 
     if (isDbConnected()) {
       const [tasks, eventsCount, transactions, habits] = await Promise.all([
